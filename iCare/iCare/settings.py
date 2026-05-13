@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -41,7 +42,22 @@ INSTALLED_APPS = [
     # My apps
     'iCare_auth',
     'core',
+    'phonenumber_field',
+    'tailwind',
+    'theme',
 ]
+
+TAILWIND_APP_NAME = "theme"
+NPM_BIN_PATH = 'npm.cmd'
+
+# Tell Django how to interpret regional phone numbers (if users don't include country code)
+PHONENUMBER_DEFAULT_REGION = 'GH'  # GH = Ghana, since your users have +233 numbers
+
+# How phone numbers are stored in the database
+PHONENUMBER_DB_FORMAT = 'E164'  # Stores as +233XXXXXXXXX format (recommended)
+
+# Default format for displaying numbers
+PHONENUMBER_DEFAULT_FORMAT = 'INTERNATIONAL'  # Shows as +233 XX XXX XXXX
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -54,6 +70,16 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'iCare.urls'
+
+AUTH_USER_MODEL = 'iCare_auth.User'  # Use our custom user model
+LOGIN_REDIRECT_URL = 'login'  # Redirect to login page after successful registration
+LOGIN_URL = 'login'
+LOGOUT_REDIRECT_URL = 'login'  # Redirect to login page after logout
+
+AUTHENTICATION_BACKENDS = [
+    'iCare_auth.backends.PhoneNumberBackend',
+    'django.contrib.auth.backends.ModelBackend',  # Keep default for admin access
+]
 
 TEMPLATES = [
     {
@@ -120,6 +146,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
