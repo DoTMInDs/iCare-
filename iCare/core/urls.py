@@ -17,4 +17,10 @@ urlpatterns = [
     # Payment handling
     path('payment/callback/', views.payment_callback, name='payment_callback'),
     path('payment/webhook/', views.payment_webhook, name='payment_webhook'),
+
+    # product-related paths
+    path('products/data/', views.get_products_data, name='get_products_data'),
+    path('products/details/', views.product_details, name='product_details'),
+    path('products/purchase/', views.purchase_product, name='purchase_product'),
+    path('investments/', views.my_investments, name='my_investments'),
 ]

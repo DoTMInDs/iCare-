@@ -1,0 +1,408 @@
+{% extends "iCare/base.html" %}
+{% load static %}
+{% block title %}Investment Products{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-b from-gray-50 to-white pb-8">
+    
+    <!-- Modern Floating Header -->
+    <div class="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-100 px-5 py-3 flex items-center justify-between shadow-sm">
+        <button class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 active:bg-gray-200 transition-all duration-200" onclick="window.history.back()">
+            <svg class="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+        </button>
+        <h1 class="text-lg font-bold text-gray-900">Investment Plans</h1>
+        <div class="w-10"></div>
+    </div>
+
+    <div class="pt-20 px-5 max-w-lg mx-auto">
+        
+        <!-- Header Banner -->
+        <div class="bg-gradient-to-r from-purple-600 to-blue-600 rounded-2xl p-5 mb-6 shadow-lg shadow-purple-200">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <div class="flex-1">
+                    <p class="text-white text-sm font-medium">Available Balance</p>
+                    <p class="text-white text-2xl font-bold text-nowrap">₵{{ user_balance.balance|floatformat:2 }}</p>
+                </div>
+                <a href="{% url 'recharge' %}" class="px-4 py-2 bg-white/20 rounded-xl text-white text-sm font-medium hover:bg-white/30 transition">
+                    Deposit
+                </a>
+            </div>
+        </div>
+
+        <!-- Filter/Sort Section -->
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide">Available Plans</h2>
+            <button id="sort-btn" class="flex items-center gap-1 text-sm text-gray-600 bg-gray-100 px-3 py-1.5 rounded-full">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"/>
+                </svg>
+                Sort by Price
+            </button>
+        </div>
+
+        <!-- Products Grid -->
+        <div class="space-y-4" id="products-container">
+            {% for product in products %}
+            <div class="product-card bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-all duration-300" 
+                 data-price="₵{{ product.price|floatformat:0 }}">
+                
+                <!-- Product Header -->
+                <div class="p-5 pb-3">
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <h3 class="text-lg font-bold text-gray-900">{{ product.name }}</h3>
+                            <div class="flex items-center gap-2 mt-1">
+                                <span class="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">
+                                    {{ product.term }}days
+                                </span>
+                                {% if product.daily_earnings %}
+                                <span class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+                                   ₵ {{ product.daily_earnings|floatformat:2 }}/day
+                                </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-2xl font-bold text-gray-900">₵{{ product.price|floatformat:2 }}</p>
+                            {% comment %} <p class="text-xs text-gray-500">₵</p> {% endcomment %}
+                        </div>
+                    </div>
+                    
+                    <!-- Description -->
+                    <p class="text-sm text-gray-600 mt-3 leading-relaxed">{{ product.description|default:"No description available" }}</p>
+                </div>
+                
+                <!-- Earnings Preview -->
+                <div class="bg-gradient-to-r from-gray-50 to-white px-5 py-3 border-t border-gray-100">
+                    <div class="flex justify-between items-center text-sm">
+                        <div>
+                            <span class="text-gray-500">Daily Earnings:</span>
+                            <span class="font-semibold text-green-600 ml-1">
+                                {% if product.daily_earnings %}
+                                    ₵ {{ product.daily_earnings }}
+                                {% else %}
+                                    --
+                                {% endif %}
+                            </span>
+                        </div>
+                        <div>
+                            <span class="text-gray-500">Total Earnings:</span>
+                            <span class="font-semibold text-blue-600 ml-1">
+                                {% if product.total_earnings %}
+                                    ₵ {{ product.total_earnings }}
+                                {% else %}
+                                    --
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="p-4 pt-3 flex gap-3">
+                    <button onclick="showProductDetails('{{ product.id }}')" class="flex-1 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200 transition">
+                        View Details
+                    </button>
+                    <button onclick="showPurchaseModal('{{ product.id }}', '{{ product.name }}', {{ product.price }})" class="flex-1 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl hover:from-blue-700 hover:to-blue-800 transition shadow-md">
+                        Purchase
+                    </button>
+                </div>
+            </div>
+            {% empty %}
+            <!-- Empty State -->
+            <div class="text-center py-12">
+                <div class="w-20 h-20 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+                    <svg class="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                    </svg>
+                </div>
+                <p class="text-gray-500 font-medium">No investment plans available</p>
+                <p class="text-sm text-gray-400 mt-1">Check back later for new opportunities</p>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- My Investments Section -->
+        {% if user_investments %}
+        <div class="mt-8">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide">My Investments</h2>
+                <a href="{% url 'my_investments' %}" class="text-xs text-blue-600 font-medium">View All</a>
+            </div>
+            
+            <div class="space-y-3">
+                {% for investment in user_investments|slice:":3" %}
+                <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="font-semibold text-gray-900">{{ investment.product.name }}</p>
+                            <p class="text-xs text-gray-500 mt-1">Purchased: {{ investment.created_at|date:"M d, Y" }}</p>
+                            <div class="flex items-center gap-3 mt-2">
+                                <span class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+                                    Earned: GHS {{ investment.total_earned|floatformat:2 }}
+                                </span>
+                                <span class="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+                                    Status: {{ investment.get_status_display }}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-sm font-bold text-gray-900">GHS {{ investment.amount|floatformat:2 }}</p>
+                            <p class="text-xs text-gray-500 mt-1">{{ investment.days_remaining }} days left</p>
+                        </div>
+                    </div>
+                    <!-- Progress Bar -->
+                    <div class="mt-3">
+                        <div class="w-full bg-gray-200 rounded-full h-1.5">
+                            <div class="bg-green-500 h-1.5 rounded-full" style="width: {{ investment.progress_percentage }}%"></div>
+                        </div>
+                        <p class="text-xs text-gray-400 mt-1">{{ investment.progress_percentage }}% completed</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Product Details Modal -->
+<div id="details-modal" class="fixed inset-0 z-50 hidden items-center justify-center px-4">
+    <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="closeModal('details-modal')"></div>
+    <div class="relative bg-white rounded-2xl max-w-md w-full max-h-[80vh] overflow-y-auto animate-fade-in-up">
+        <div class="sticky top-0 bg-white border-b border-gray-100 px-5 py-4 flex justify-between items-center">
+            <h3 class="text-lg font-bold text-gray-900">Product Details</h3>
+            <button onclick="closeModal('details-modal')" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
+                <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        <div class="p-5" id="details-content">
+            <!-- Dynamic content loaded via JS -->
+        </div>
+    </div>
+</div>
+
+<!-- Purchase Modal -->
+<div id="purchase-modal" class="fixed inset-0 z-50 hidden items-center justify-center px-4">
+    <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="closeModal('purchase-modal')"></div>
+    <div class="relative bg-white rounded-2xl max-w-md w-full animate-fade-in-up">
+        <div class="border-b border-gray-100 px-5 py-4">
+            <h3 class="text-lg font-bold text-gray-900">Purchase Investment</h3>
+        </div>
+        <form id="purchase-form" method="post" action="{% url 'purchase_product' %}" class="p-5 space-y-4">
+            {% csrf_token %}
+            <input type="hidden" name="product_id" id="purchase-product-id">
+            
+            <div class="bg-blue-50 rounded-xl p-4">
+                <p class="text-sm text-gray-700 mb-2">Selected Plan:</p>
+                <p class="font-semibold text-gray-900" id="purchase-product-name"></p>
+                <div class="flex justify-between mt-3 pt-3 border-t border-blue-100">
+                    <span class="text-sm text-gray-600">Price:</span>
+                    <span class="font-bold text-blue-600" id="purchase-product-price"></span>
+                </div>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Payment Method</label>
+                <select name="payment_method" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-blue-400">
+                    <option value="wallet">Wallet Balance</option>
+                    <option value="card">Card Payment</option>
+                    <option value="mobile_money">Mobile Money</option>
+                </select>
+            </div>
+            
+            <div id="wallet-info" class="bg-gray-50 rounded-xl p-3 text-sm">
+                <div class="flex justify-between">
+                    <span class="text-gray-600">Available Balance:</span>
+                    <span class="font-semibold text-gray-900">₵ {{ user_balance.balance|floatformat:2 }}</span>
+                </div>
+            </div>
+            
+            <div id="payment-warning" class="hidden bg-yellow-50 border-l-4 border-yellow-500 rounded-lg p-3 text-sm text-yellow-800">
+                <div class="flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                    <span>Insufficient balance. Please recharge your wallet.</span>
+                </div>
+            </div>
+            
+            <div class="flex gap-3 pt-2">
+                <button type="button" onclick="closeModal('purchase-modal')" class="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition">
+                    Cancel
+                </button>
+                <button type="submit" class="flex-1 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-medium hover:from-blue-700 hover:to-blue-800 transition shadow-md">
+                    Confirm Purchase
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .animate-fade-in-up {
+        animation: fadeInUp 0.3s ease-out;
+    }
+    
+    .product-card {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    
+    .product-card:active {
+        transform: scale(0.98);
+    }
+</style>
+
+<script>
+    let productsData = {};
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        // Load products data from backend
+        fetchProductsData();
+        
+        // Sort functionality
+        let sortAscending = true;
+        const sortBtn = document.getElementById('sort-btn');
+        const productsContainer = document.getElementById('products-container');
+        
+        if (sortBtn) {
+            sortBtn.addEventListener('click', function() {
+                sortAscending = !sortAscending;
+                sortProducts(sortAscending);
+                sortBtn.innerHTML = sortAscending ? 
+                    '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"/></svg> Sort by Price (Low to High)' :
+                    '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4 4m0 0l4-4m-4-4v12"/></svg> Sort by Price (High to Low)';
+            });
+        }
+    });
+    
+    function fetchProductsData() {
+        fetch('{% url "get_products_data" %}')
+            .then(response => response.json())
+            .then(data => {
+                productsData = data;
+            })
+            .catch(error => console.error('Error:', error));
+    }
+    
+    function sortProducts(ascending) {
+        const container = document.getElementById('products-container');
+        const cards = Array.from(container.children);
+        
+        cards.sort((a, b) => {
+            const priceA = parseFloat(a.dataset.price);
+            const priceB = parseFloat(b.dataset.price);
+            return ascending ? priceA - priceB : priceB - priceA;
+        });
+        
+        container.innerHTML = '';
+        cards.forEach(card => container.appendChild(card));
+    }
+    
+    function showProductDetails(productId) {
+        const modal = document.getElementById('details-modal');
+        const content = document.getElementById('details-content');
+        
+        fetch(`{% url "product_details" %}?id=${productId}`)
+            .then(response => response.json())
+            .then(product => {
+                content.innerHTML = `
+                    <div class="space-y-4">
+                        <div class="bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl p-4">
+                            <h4 class="font-bold text-lg text-gray-900">${product.name}</h4>
+                            <p class="text-2xl font-bold text-blue-600 mt-2">₵ ${product.price}</p>
+                        </div>
+                        
+                        <div>
+                            <h5 class="font-semibold text-gray-700 mb-2">Description</h5>
+                            <p class="text-sm text-gray-600 leading-relaxed">${product.description || 'No description available.'}</p>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="bg-gray-50 rounded-xl p-3 text-center">
+                                <p class="text-xs text-gray-500">Term</p>
+                                <p class="font-semibold text-gray-900">${product.term}days</p>
+                            </div>
+                            <div class="bg-gray-50 rounded-xl p-3 text-center">
+                                <p class="text-xs text-gray-500">Daily Earnings</p>
+                                <p class="font-semibold text-green-600">GHS ${product.daily_earnings || '--'}</p>
+                            </div>
+                            <div class="bg-gray-50 rounded-xl p-3 text-center col-span-2">
+                                <p class="text-xs text-gray-500">Total Expected Return</p>
+                                <p class="font-semibold text-blue-600">GHS ${product.total_earnings || '--'}</p>
+                            </div>
+                        </div>
+                        
+                        <button onclick="closeModal('details-modal'); showPurchaseModal('${product.id}', '${product.name}', ${product.price})" 
+                                class="w-full py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-medium hover:from-blue-700 hover:to-blue-800 transition shadow-md">
+                            Purchase Now
+                        </button>
+                    </div>
+                `;
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            })
+            .catch(error => console.error('Error:', error));
+    }
+    
+    function showPurchaseModal(productId, productName, productPrice) {
+        const modal = document.getElementById('purchase-modal');
+        const balance = {{ user_balance.balance|default:0 }};
+        
+        document.getElementById('purchase-product-id').value = productId;
+        document.getElementById('purchase-product-name').innerText = productName;
+        document.getElementById('purchase-product-price').innerHTML = `GHS ${productPrice.toFixed(2)}`;
+        
+        const walletInfo = document.getElementById('wallet-info');
+        const paymentWarning = document.getElementById('payment-warning');
+        
+        if (productPrice > balance) {
+            paymentWarning.classList.remove('hidden');
+        } else {
+            paymentWarning.classList.add('hidden');
+        }
+        
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+    
+    function closeModal(modalId) {
+        const modal = document.getElementById(modalId);
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+    
+    // Handle purchase form submission
+    document.getElementById('purchase-form')?.addEventListener('submit', function(e) {
+        const productPrice = parseFloat(document.getElementById('purchase-product-price').innerText.replace('GHS ', ''));
+        const balance = {{ user_balance.balance|default:0 }};
+        const paymentMethod = document.querySelector('select[name="payment_method"]').value;
+        
+        if (paymentMethod === 'wallet' && productPrice > balance) {
+            e.preventDefault();
+            alert('Insufficient balance. Please recharge your wallet or select another payment method.');
+        }
+    });
+</script>
+{% include "iCare/partials/footer.html" %}
+{% endblock %}

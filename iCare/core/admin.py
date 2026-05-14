@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import RechargeTransaction, UserBalance, WithdrawalTransaction
+from .models import RechargeTransaction, UserBalance, WithdrawalTransaction, Product
 
 @admin.register(UserBalance)
 class UserBalanceAdmin(admin.ModelAdmin):
@@ -22,3 +22,9 @@ class WithdrawalTransactionAdmin(admin.ModelAdmin):
     search_fields = ['reference', 'user__phone_number']
     readonly_fields = ['id', 'reference', 'created_at', 'updated_at']
     ordering = ['-created_at']
+
+@admin.register(Product)
+class ProductAdmin(admin.ModelAdmin):
+    list_display = ['name', 'description', 'price', 'term', 'daily_earnings', 'total_earnings', 'created_at']
+    search_fields = ['name', 'description']
+    readonly_fields = ['created_at']

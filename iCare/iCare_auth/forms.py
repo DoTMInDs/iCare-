@@ -42,3 +42,13 @@ class PhoneRegistrationForm(forms.ModelForm):
         if commit:
             user.save()
         return user
+    
+class ProfileUpdateForm(forms.ModelForm):
+    full_name = forms.CharField(required=False, widget=forms.TextInput(attrs={'placeholder': 'Full Name'}))
+    email = forms.EmailField(required=False, widget=forms.EmailInput(attrs={'placeholder': 'Email Address'}))
+    address = forms.CharField(required=False, widget=forms.Textarea(attrs={'placeholder': 'Address', 'rows': 3}))
+    date_of_birth = forms.DateField(required=False, widget=forms.DateInput(attrs={'type': 'date'}))
+
+    class Meta:
+        model = User
+        fields = ['full_name', 'email', 'address', 'date_of_birth']

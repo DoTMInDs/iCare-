@@ -44,3 +44,16 @@ class User(AbstractBaseUser, PermissionsMixin):
     
     def get_short_name(self):
         return str(self.phone_number)
+    
+# profile model to store additional user information
+class UserProfile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+    full_name = models.CharField(max_length=255, blank=True, null=True)
+    email = models.EmailField(blank=True, null=True)
+    address = models.TextField(blank=True, null=True)
+    date_of_birth = models.DateField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.full_name if self.full_name else str(self.user)

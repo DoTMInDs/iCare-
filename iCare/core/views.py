@@ -12,8 +12,9 @@ from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
 from django.conf import settings
 from django.db import transaction
+from django.contrib import messages
 
-from .models import RechargeTransaction, UserBalance, WithdrawalTransaction
+from .models import RechargeTransaction, UserBalance, WithdrawalTransaction, Product, UserInvestment
 from .paystack_service import PaystackService
 from django.db.models import Sum
 from django.urls import reverse
@@ -29,10 +30,6 @@ def home(request):
         'user_balance': user_balance,
     }
     return render(request, 'iCare/services/home.html',context)
-
-
-def product(request):
-    return render(request, 'iCare/services/product.html')
 
 
 @login_required
@@ -414,6 +411,115 @@ def account(request):
     }
     return render(request, 'iCare/services/pages/account.html', context)
 
+@login_required
+def product(request):
+    """Display available products and user investments"""
+    products = Product.objects.all()
+    user_balance, created = UserBalance.objects.get_or_create(
+        user=request.user,
+        defaults={'balance': 0, 'currency': 'GHS'}
+    )
+    
+    # Get user's active investments
+    user_investments = UserInvestment.objects.filter(
+        user=request.user,
+        status__in=['active', 'pending']
+    ).select_related('product')[:5]
+    
+    # Calculate progress for each investment
+    for investment in user_investments:
+        investment.total_earned = investment.calculate_earned_so_far()
+        investment.days_remaining = investment.get_days_remaining()
+        investment.progress_percentage = investment.get_progress_percentage()
+    
+    context = {
+        'products': products,
+        'user_balance': user_balance,
+        'user_investments': user_investments,
+    }
+    return render(request, 'iCare/services/product.html', context)
+
+@login_required
+def get_products_data(request):
+    """AJAX endpoint to get all products data"""
+    products = Product.objects.all().values('id', 'name', 'price', 'description', 'term', 'daily_earnings', 'total_earnings')
+    return JsonResponse(list(products), safe=False)
+
+@login_required
+def product_details(request):
+    """AJAX endpoint to get single product details"""
+    product_id = request.GET.get('id')
+    try:
+        product = Product.objects.get(id=product_id)
+        data = {
+            'id': str(product.id),
+            'name': product.name,
+            'price': float(product.price),
+            'description': product.description,
+            'term': product.term,
+            'daily_earnings': float(product.daily_earnings) if product.daily_earnings else None,
+            'total_earnings': float(product.total_earnings) if product.total_earnings else None,
+        }
+        return JsonResponse(data)
+    except Product.DoesNotExist:
+        return JsonResponse({'error': 'Product not found'}, status=404)
+
+@login_required
+@require_http_methods(['POST'])
+def purchase_product(request):
+    """Handle product purchase"""
+    product_id = request.POST.get('product_id')
+    payment_method = request.POST.get('payment_method')
+    
+    try:
+        product = Product.objects.get(id=product_id)
+    except Product.DoesNotExist:
+        messages.error(request, 'Product not found.')
+        return redirect('product')
+    
+    user_balance, created = UserBalance.objects.get_or_create(
+        user=request.user,
+        defaults={'balance': 0, 'currency': 'GHS'}
+    )
+    
+    if payment_method == 'wallet':
+        if user_balance.balance >= product.price:
+            with transaction.atomic():
+                # Deduct from wallet
+                user_balance.deduct_balance(product.price)
+                
+                # Create investment record
+                investment = UserInvestment.objects.create(
+                    user=request.user,
+                    product=product,
+                    amount=product.price,
+                    status='active'
+                )
+                
+                messages.success(request, f'Successfully purchased {product.name}! Your investment is now active.')
+        else:
+            messages.error(request, 'Insufficient balance. Please recharge your wallet.')
+    else:
+        # For other payment methods, redirect to payment gateway
+        return redirect(f"{reverse('recharge')}?amount={product.price}&product={product_id}&payment_method={payment_method}")
+    
+    return redirect('product')
+
+@login_required
+def my_investments(request):
+    """Display user's all investments"""
+    investments = UserInvestment.objects.filter(user=request.user).select_related('product').order_by('-created_at')
+    
+    for investment in investments:
+        investment.total_earned = investment.calculate_earned_so_far()
+        investment.days_remaining = investment.get_days_remaining()
+        investment.progress_percentage = investment.get_progress_percentage()
+    
+    context = {
+        'investments': investments,
+        'user_balance': UserBalance.objects.get_or_create(user=request.user)[0],
+    }
+    return render(request, 'iCare/services/pages/my_investments.html', context)
 
 def tasks(request):
     return render(request, 'iCare/services/pages/tasks.html')
