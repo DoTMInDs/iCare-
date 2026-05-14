@@ -31,6 +31,9 @@ class PhoneRegistrationForm(forms.ModelForm):
         if password and confirm_password and password != confirm_password:
             raise forms.ValidationError('Passwords do not match')
         
+        if password and len(password) < 8:
+            raise forms.ValidationError('Password must be at least 8 characters long')
+        
         return cleaned_data
     
     def save(self, commit=True):

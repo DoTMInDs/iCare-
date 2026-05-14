@@ -1,6 +1,384 @@
 {% extends "iCare/base.html" %}
 {% load static %}
-{% block title %}Login{% endblock  %}
+{% block title %}Login{% endblock %}
+
 {% block content %}
-login page
-{% endblock  %}
+<div class="relative min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 overflow-hidden">
+    
+    <!-- Apple Background Image -->
+    <div class="absolute inset-0 z-0">
+        <div class="absolute inset-0 bg-gradient-to-br from-black/70 via-black/50 to-black/70 z-10"></div>
+        <img src="https://images.unsplash.com/photo-1491933382434-500287f9b54b?q=80&w=2070&auto=format&fit=crop" 
+             alt="Apple-inspired background"
+             class="w-full h-full object-cover">
+    </div>
+
+    <!-- Mobile First Notification System -->
+    <div id="notification-container" class="fixed inset-x-0 top-0 z-50 flex flex-col items-center pointer-events-none pt-4 sm:pt-6 px-4 sm:px-6 gap-3">
+        <!-- Success Notification -->
+        <div id="success-notification" class="w-full sm:max-w-sm transform transition-all duration-500 ease-out -translate-y-full opacity-0 pointer-events-auto">
+            <div class="bg-green-500/95 backdrop-blur-md rounded-2xl shadow-2xl border border-green-400/30 p-4 flex items-start gap-3">
+                <div class="shrink-0 flex-none">
+                    <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <p id="success-message" class="text-white font-medium text-sm">Successfully logged in!</p>
+                    <p class="text-green-100 text-xs mt-0.5">Redirecting to dashboard...</p>
+                </div>
+                <button onclick="closeNotification('success')" class="shrink-0 flex-none text-white/70 hover:text-white transition">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Error Notification -->
+        <div id="error-notification" class="w-full sm:max-w-sm transform transition-all duration-500 ease-out -translate-y-full opacity-0 pointer-events-auto">
+            <div class="bg-red-500/95 backdrop-blur-md rounded-2xl shadow-2xl border border-red-400/30 p-4 flex items-start gap-3">
+                <div class="shrink-0 flex-none">
+                    <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <p id="error-message" class="text-white font-medium text-sm">Login failed</p>
+                    <p id="error-detail" class="text-red-100 text-xs mt-0.5">Please check your credentials</p>
+                </div>
+                <button onclick="closeNotification('error')" class="shrink-0 flex-none text-white/70 hover:text-white transition">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Info Notification -->
+        <div id="info-notification" class="w-full sm:max-w-sm transform transition-all duration-500 ease-out -translate-y-full opacity-0 pointer-events-auto">
+            <div class="bg-blue-500/95 backdrop-blur-md rounded-2xl shadow-2xl border border-blue-400/30 p-4 flex items-start gap-3">
+                <div class="shrink-0 flex-none">
+                    <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <p id="info-message" class="text-white font-medium text-sm">Welcome back!</p>
+                    <p id="info-detail" class="text-blue-100 text-xs mt-0.5">Please login to continue</p>
+                </div>
+                <button onclick="closeNotification('info')" class="shrink-0 flex-none text-white/70 hover:text-white transition">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Warning Notification -->
+        <div id="warning-notification" class="w-full sm:max-w-sm transform transition-all duration-500 ease-out -translate-y-full opacity-0 pointer-events-auto">
+            <div class="bg-yellow-500/95 backdrop-blur-md rounded-2xl shadow-2xl border border-yellow-400/30 p-4 flex items-start gap-3">
+                <div class="shrink-0 flex-none">
+                    <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <p id="warning-message" class="text-white font-medium text-sm">Session Expiring</p>
+                    <p id="warning-detail" class="text-yellow-100 text-xs mt-0.5">You'll be logged out in 5 minutes</p>
+                </div>
+                <button onclick="closeNotification('warning')" class="shrink-0 flex-none text-white/70 hover:text-white transition">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    {% if messages %}
+    <div id="django-messages" class="hidden">
+        {% for message in messages %}
+        <div class="django-message" data-level="{{ message.tags }}" data-text="{{ message|escapejs }}"></div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Frosted Glass Card Container -->
+    <div class="relative z-20 max-w-md w-full mx-auto">
+        <div class="bg-black/70 border border-white/10 rounded-[2rem] shadow-2xl p-8 backdrop-blur-xl">
+            <div class="text-center mb-10">
+                <div class="mx-auto mb-6 h-24 w-24 rounded-full bg-white/10 border border-white/15 flex items-center justify-center">
+                    <svg class="h-12 w-12 text-white/90" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M16.365 1.43c0 1.14-.721 2.276-1.832 2.81-.61.29-1.415.52-2.177.46-.083-.85.218-1.735.712-2.37.5-.64 1.37-1.06 2.149-1.09.12 0 .242.006.363.02.593.06 1.104.184 1.488.295z" />
+                        <path d="M12.854 4.52c.096.1 2.43 1.586 2.55 4.85.135 3.62-2.71 5.52-2.738 5.543-.028-.02-2.606-1.64-2.724-4.96-.084-2.3 1.275-4.02 2.125-4.73.625-.515 1.628-1.03 2.787-.702z" />
+                    </svg>
+                </div>
+                <h1 class="text-4xl font-semibold tracking-tight text-white">Log in</h1>
+            </div>
+
+            <form method="post" action="{% url 'login' %}" id="login-form" class="space-y-5">
+                {% csrf_token %}
+                
+                <div>
+                    <label for="phone" class="sr-only">Phone number</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-4 flex items-center text-white/70 text-sm">+233</span>
+                        <input type="tel"
+                               name="phone"
+                               id="phone"
+                               required
+                               class="w-full pl-16 pr-4 py-4 bg-white/10 border border-white/10 rounded-full text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-white/20 transition duration-200"
+                               placeholder="Enter phone number">
+                    </div>
+                </div>
+
+                <div>
+                    <label for="password" class="sr-only">Password</label>
+                    <input type="password"
+                           name="password"
+                           id="password"
+                           required
+                           class="w-full px-4 py-4 bg-white/10 border border-white/10 rounded-full text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-white/20 transition duration-200"
+                           placeholder="Enter password">
+                </div>
+
+
+                <!-- Error Messages (Fallback for non-JS) -->
+                {% if form.errors %}
+                <div class="rounded-xl bg-red-500/20 backdrop-blur-sm border border-red-400/30 p-4">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-red-300" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <h3 class="text-sm font-medium text-red-200">Login failed</h3>
+                            <div class="mt-1 text-sm text-red-100">
+                                {{ form.non_field_errors }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Login Button -->
+                <div>
+                    <button type="submit"
+                            id="login-button"
+                            class="w-full rounded-full bg-white/10 border border-white/15 py-4 text-sm font-semibold text-white transition hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/30 flex items-center justify-center">
+                        <span id="login-text">Log in</span>
+                        <span id="login-spinner" class="hidden">
+                            <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+                            </svg>
+                        </span>
+                    </button>
+                </div>
+
+                <!-- Register Link -->
+                <div class="text-center pt-4">
+                    <p class="text-sm text-white/70">
+                        Don't have an account?
+                        <a href="{% url 'signup' %}" class="font-medium text-white hover:text-white/90 transition duration-200 ml-1">
+                            Go to register →
+                        </a>
+                    </p>
+                </div>
+            </form>
+        </div>
+
+    </div>
+</div>
+
+<script>
+// Notification System
+function showNotification(type, title, message, duration = 5000) {
+    const notification = document.getElementById(`${type}-notification`);
+    if (!notification) return;
+    
+    // Update message content
+    const titleElement = document.getElementById(`${type}-message`);
+    const detailElement = document.getElementById(`${type}-detail`);
+    
+    if (titleElement) titleElement.textContent = title;
+    if (detailElement && message) detailElement.textContent = message;
+    
+    // Show notification
+    notification.classList.remove('-translate-y-full', 'opacity-0');
+    notification.classList.add('translate-y-0', 'opacity-100');
+    
+    // Auto hide after duration
+    setTimeout(() => {
+        closeNotification(type);
+    }, duration);
+}
+
+function closeNotification(type) {
+    const notification = document.getElementById(`${type}-notification`);
+    if (notification) {
+        notification.classList.remove('translate-y-0', 'opacity-100');
+        notification.classList.add('-translate-y-full', 'opacity-0');
+    }
+}
+
+// Toggle password visibility
+function togglePassword() {
+    const passwordInput = document.getElementById('password');
+    const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+    passwordInput.setAttribute('type', type);
+}
+
+// Auto-format phone number
+document.getElementById('phone')?.addEventListener('input', function(e) {
+    let value = e.target.value.replace(/\D/g, '');
+    if (value.length > 9) value = value.slice(0, 9);
+    e.target.value = value;
+});
+
+// Form submission with loading state and notifications
+document.getElementById('login-form')?.addEventListener('submit', function(e) {
+    const phone = document.getElementById('phone').value;
+    const password = document.getElementById('password').value;
+    
+    // Basic validation
+    if (!phone || phone.length < 9) {
+        e.preventDefault();
+        showNotification('error', 'Invalid Phone Number', 'Please enter a valid 9-digit phone number');
+        return false;
+    }
+    
+    if (!password || password.length < 6) {
+        e.preventDefault();
+        showNotification('error', 'Invalid Password', 'Password must be at least 6 characters');
+        return false;
+    }
+    
+    // Show loading state
+    const loginButton = document.getElementById('login-button');
+    const loginText = document.getElementById('login-text');
+    const loginSpinner = document.getElementById('login-spinner');
+    
+    loginButton.classList.add('opacity-75', 'cursor-wait');
+    loginText.classList.add('hidden');
+    loginSpinner.classList.remove('hidden');
+    
+    // Show info notification
+    showNotification('info', 'Authenticating...', 'Please wait while we verify your credentials', 3000);
+});
+
+// Check for remember me and show welcome notification
+window.addEventListener('DOMContentLoaded', function() {
+
+    // Show Django messages as notifications
+    document.querySelectorAll('.django-message').forEach(el => {
+        const level = el.dataset.level ? el.dataset.level.split(' ')[0] : 'info';
+        const text = el.dataset.text || '';
+        let type = 'info';
+        if (level === 'success') type = 'success';
+        else if (level === 'error') type = 'error';
+        else if (level === 'warning') type = 'warning';
+        showNotification(type, level.charAt(0).toUpperCase() + level.slice(1), text, 7000);
+    });
+    
+    // Save remember me preference
+    const rememberCheckbox = document.getElementById('remember-checkbox');
+    if (rememberCheckbox) {
+        rememberCheckbox.addEventListener('change', function(e) {
+            if (e.target.checked) {
+                localStorage.setItem('remembered_user', 'true');
+                showNotification('success', 'Remember me enabled', 'You will stay logged in', 3000);
+            } else {
+                localStorage.removeItem('remembered_user');
+            }
+        });
+    }
+});
+
+// Mobile touch optimizations
+document.querySelectorAll('input, button, a').forEach(element => {
+    element.addEventListener('touchstart', function() {
+        this.style.transform = 'scale(0.98)';
+    });
+    element.addEventListener('touchend', function() {
+        this.style.transform = '';
+    });
+});
+
+// Optional: Parallax effect
+document.addEventListener('mousemove', function(e) {
+    const img = document.querySelector('.absolute.inset-0 img');
+    if (img) {
+        const x = e.clientX / window.innerWidth;
+        const y = e.clientY / window.innerHeight;
+        img.style.transform = `scale(1.05) translate(${x * 5}px, ${y * 5}px)`;
+    }
+});
+
+</script>
+
+<style>
+    /* Mobile-first touch optimizations */
+    @media (max-width: 640px) {
+        input, button, a {
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        .rounded-3xl {
+            border-radius: 1.5rem;
+        }
+        
+        /* Better touch targets */
+        button, 
+        [role="button"],
+        input[type="checkbox"] + span {
+            min-height: 44px;
+        }
+        
+        input, button {
+            font-size: 16px !important; /* Prevents zoom on focus in iOS */
+        }
+    }
+    
+    /* Smooth animations */
+    .absolute.inset-0 img {
+        transition: transform 0.3s ease-out;
+    }
+    
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .relative.z-20 {
+        animation: fadeIn 0.6s ease-out;
+    }
+    
+    /* Notification animations */
+    .transition-all {
+        transition-property: all;
+        transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    /* Loading spinner animation */
+    @keyframes spin {
+        to {
+            transform: rotate(360deg);
+        }
+    }
+    
+    .animate-spin {
+        animation: spin 1s linear infinite;
+    }
+</style>
+
+{% endblock %}

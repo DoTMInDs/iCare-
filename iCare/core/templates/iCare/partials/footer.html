@@ -1,0 +1,96 @@
+<!-- Mobile Bottom Navigation Bar -->
+<footer class="fixed bottom-0 mx-w-4xl left-0 right-0 z-50 bg-white/95 backdrop-blur-lg border-t border-gray-200 shadow-lg">
+    <div class="flex justify-around items-center px-2 pt-2 pb-6">
+        
+        <!-- Home -->
+        <a href="{% url 'home' %}" class="flex flex-col items-center gap-0 group">
+            <div class="p-2 rounded-xl transition-all duration-200 group-hover:bg-blue-100">
+                <svg class="h-6 w-6 text-gray-600 group-hover:text-blue-600 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                </svg>
+            </div>
+            <span class="text-xs font-medium text-gray-600 group-hover:text-blue-600 transition-colors duration-200">Home</span>
+        </a>
+
+        <!-- Product -->
+        <a href="#" class="flex flex-col items-center gap-0 group">
+            <div class="p-2 rounded-xl transition-all duration-200 group-hover:bg-purple-100">
+                <svg class="h-6 w-6 text-gray-600 group-hover:text-purple-600 transition-colors duration-200" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M8 8V7C8 5.93913 8.42143 4.92172 9.17157 4.17157C9.92172 3.42143 10.9391 3 12 3C13.0609 3 14.0783 3.42143 14.8284 4.17157C15.5786 4.92172 16 5.93913 16 7V8M15 14V12M9 14V12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    <path d="M4 12C4 10.114 4 9.172 4.586 8.586C5.172 8 6.114 8 8 8H16C17.886 8 18.828 8 19.414 8.586C20 9.172 20 10.114 20 12V13C20 16.771 20 18.657 18.828 19.828C17.656 20.999 15.771 21 12 21C8.229 21 6.343 21 5.172 19.828C4.001 18.656 4 16.771 4 13V12Z" stroke="currentColor" stroke-width="2"/>
+                </svg>
+            </div>
+            <span class="text-xs font-medium text-gray-600 group-hover:text-purple-600 transition-colors duration-200">Product</span>
+        </a>
+
+        <!-- Team -->
+        <a href="#" class="flex flex-col items-center gap-0 group">
+            <div class="p-2 rounded-xl transition-all duration-200 group-hover:bg-green-100">
+                <svg class="h-6 w-6 text-gray-600 group-hover:text-green-600 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                </svg>
+            </div>
+            <span class="text-xs font-medium text-gray-600 group-hover:text-green-600 transition-colors duration-200">Team</span>
+        </a>
+
+        <!-- Profile -->
+        <a href="{% url "profile" %}" class="flex flex-col items-center gap-0 group">
+            <div class="p-2 rounded-xl transition-all duration-200 group-hover:bg-orange-100">
+                <svg class="h-6 w-6 text-gray-600 group-hover:text-orange-600 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                </svg>
+            </div>
+            <span class="text-xs font-medium text-gray-600 group-hover:text-orange-600 transition-colors duration-200">Profile</span>
+        </a>
+    </div>
+</footer>
+
+<!-- Active State Example (JavaScript to highlight current page) -->
+<script>
+    // Get current page URL
+    const currentPath = window.location.pathname;
+    
+    // Define mappings for each nav item
+    const navItems = [
+        { element: document.querySelector('a[href*="home"]'), path: '/home', activeColor: 'text-blue-600', bgColor: 'bg-blue-50' },
+        { element: document.querySelector('a[href*="product"]'), path: '/product', activeColor: 'text-purple-600', bgColor: 'bg-purple-50' },
+        { element: document.querySelector('a[href*="team"]'), path: '/team', activeColor: 'text-green-600', bgColor: 'bg-green-50' },
+        { element: document.querySelector('a[href*="profile"]'), path: '/profile', activeColor: 'text-orange-600', bgColor: 'bg-orange-50' }
+    ];
+    
+    // Add active class to current page
+    navItems.forEach(item => {
+        if (item.element && currentPath.includes(item.path)) {
+            const icon = item.element.querySelector('svg');
+            const text = item.element.querySelector('span');
+            const div = item.element.querySelector('div');
+            
+            if (icon) icon.classList.add(item.activeColor);
+            if (text) text.classList.add(item.activeColor);
+            if (div) div.classList.add(item.bgColor);
+        }
+    });
+</script>
+
+<style>
+    /* Add padding to bottom of your main content to prevent overlap */
+    main {
+        padding-bottom: 70px;
+    }
+    
+    @media (min-width: 768px) {
+        main {
+            padding-bottom: 0;
+        }
+    }
+    
+    /* Smooth transitions */
+    .fixed footer a {
+        transition: all 0.2s ease;
+    }
+    
+    /* Active tap effect for mobile */
+    .fixed footer a:active {
+        transform: scale(0.95);
+    }
+</style>

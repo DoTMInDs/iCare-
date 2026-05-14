@@ -29,6 +29,7 @@ class UserManager(BaseUserManager):
 class User(AbstractBaseUser, PermissionsMixin):
     # use phonenumber instead of charfield
     phone_number = PhoneNumberField(unique=True, region='GH', verbose_name='Phone Number')
+    email = models.EmailField(blank=True, null=True, unique=True)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     date_joined = models.DateTimeField(auto_now_add=True)

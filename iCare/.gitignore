@@ -3,3 +3,10 @@
 __pycache__/
 
 staticfiles/
+
+.env*
+*.pyc
+*.pyo
+*
+.env
+.env.paystack*
