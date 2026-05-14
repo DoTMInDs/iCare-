@@ -1,0 +1,352 @@
+{% extends "iCare/base.html" %}
+{% load static %}
+{% block title %}Withdraw Funds{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-b from-gray-50 to-white pb-8">
+    
+    <!-- Modern Floating Header -->
+    <div class="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-100 px-5 py-3 flex items-center justify-between shadow-sm">
+        <button class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 active:bg-gray-200 transition-all duration-200" onclick="window.history.back()">
+            <svg class="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+        </button>
+        <h1 class="text-lg font-bold text-gray-900">Withdraw</h1>
+        <a href="{% url 'withdrawal_records' %}" class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 active:bg-gray-200 transition-all duration-200">
+            <svg class="w-5 h-5 text-gray-700" viewBox="0 0 24 24" fill="none">
+                <path d="M12 21C10.75 21 9.57933 20.7627 8.488 20.288C7.39667 19.8133 6.44667 19.1717 5.638 18.363C4.82933 17.5543 4.18767 16.6043 3.713 15.513C3.23833 14.4217 3.00067 13.2507 3 12C2.99933 10.7493 3.237 9.57867 3.713 8.488C4.189 7.39733 4.83033 6.44733 5.637 5.638C6.44367 4.82867 7.39367 4.187 8.487 3.713C9.58034 3.239 10.7513 3.00133 12 3C13.3667 3 14.6627 3.29167 15.888 3.875C17.1133 4.45833 18.1507 5.28333 19 6.35V5C19 4.71667 19.096 4.47933 19.288 4.288C19.48 4.09667 19.7173 4.00067 20 4C20.2827 3.99933 20.5203 4.09533 20.713 4.288C20.9057 4.48067 21.0013 4.718 21 5V9C21 9.28333 20.904 9.521 20.712 9.713C20.52 9.905 20.2827 10.0007 20 10H16C15.7167 10 15.4793 9.904 15.288 9.712C15.0967 9.52 15.0007 9.28267 15 9C14.9993 8.71733 15.0953 8.48 15.288 8.288C15.4807 8.096 15.718 8 16 8H17.75C17.0667 7.06667 16.225 6.33333 15.225 5.8C14.225 5.26667 13.15 5 12 5C10.05 5 8.396 5.67933 7.038 7.038C5.68 8.39667 5.00067 10.0507 5 12C4.99933 13.9493 5.67867 15.6037 7.038 16.963C8.39734 18.3223 10.0513 19.0013 12 19C13.5833 19 15 18.525 16.25 17.575C17.5 16.625 18.325 15.4 18.725 13.9C18.8083 13.6333 18.9583 13.4333 19.175 13.3C19.3917 13.1667 19.6333 13.1167 19.9 13.15C20.1833 13.1833 20.4083 13.304 20.575 13.512C20.7417 13.72 20.7917 13.9493 20.725 14.2C20.2417 16.1833 19.1917 17.8127 17.575 19.088C15.9583 20.3633 14.1 21.0007 12 21ZM13 11.6L15.5 14.1C15.6833 14.2833 15.775 14.5167 15.775 14.8C15.775 15.0833 15.6833 15.3167 15.5 15.5C15.3167 15.6833 15.0833 15.775 14.8 15.775C14.5167 15.775 14.2833 15.6833 14.1 15.5L11.3 12.7C11.2 12.6 11.125 12.4877 11.075 12.363C11.025 12.2383 11 12.109 11 11.975V8C11 7.71667 11.096 7.47933 11.288 7.288C11.48 7.09667 11.7173 7.00067 12 7C12.2827 6.99933 12.5203 7.09533 12.713 7.288C12.9057 7.48067 13.0013 7.718 13 8V11.6Z" fill="currentColor"/>
+            </svg>
+        </a>
+    </div>
+
+    <div class="pt-20 px-5 max-w-lg mx-auto">
+        <!-- Balance Card -->
+        <div class="mb-6 bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl p-6 shadow-xl shadow-blue-200">
+            <div class="flex justify-between items-start">
+                <div>
+                    <p class="text-blue-100 text-xs font-medium uppercase tracking-wide">Available Balance</p>
+                    <p class="text-white text-3xl font-bold mt-2">
+                        {{ user_balance.currency }} {{ user_balance.balance|floatformat:2 }}
+                    </p>
+                </div>
+                <div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2z"/>
+                    </svg>
+                </div>
+            </div>
+            <div class="mt-4 pt-3 border-t border-blue-500/50">
+                <div class="flex justify-between text-xs text-blue-100">
+                    <span>💰 Minimum withdrawal: GHS 100</span>
+                    <span>⚡ Instant processing</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Withdrawal Form -->
+        <form method="post" class="space-y-6">
+            {% csrf_token %}
+            
+            <!-- Amount Input -->
+            <div class="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+                <label class="block text-sm font-semibold text-gray-700 mb-3">Withdrawal Amount</label>
+                <div class="flex items-center gap-2 bg-gray-50 rounded-xl px-4 py-3 border border-gray-200 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100 transition">
+                    <span class="text-xl font-bold text-blue-600">₵</span>
+                    <input 
+                        type="number" 
+                        name="amount" 
+                        id="amount"
+                        step="1"
+                        min="100"
+                        required
+                        placeholder="Enter amount"
+                        value="{{ request.POST.amount|default:'' }}"
+                        class="w-full bg-transparent outline-none text-lg font-medium text-gray-900 placeholder-gray-400"
+                    >
+                </div>
+                <div class="flex justify-between mt-3">
+                    <div class="flex gap-2">
+                        <button type="button" data-amount="100" class="quick-amount px-3 py-1.5 text-xs bg-gray-100 rounded-lg text-gray-700 hover:bg-gray-200 transition">GHS 100</button>
+                        <button type="button" data-amount="250" class="quick-amount px-3 py-1.5 text-xs bg-gray-100 rounded-lg text-gray-700 hover:bg-gray-200 transition">GHS 250</button>
+                        <button type="button" data-amount="500" class="quick-amount px-3 py-1.5 text-xs bg-gray-100 rounded-lg text-gray-700 hover:bg-gray-200 transition">GHS 500</button>
+                    </div>
+                    <button type="button" id="max-withdraw" class="text-xs text-blue-600 font-medium hover:text-blue-700">
+                        Max
+                    </button>
+                </div>
+                <p class="text-xs text-gray-400 mt-3">
+                    <span id="amount-error" class="text-red-500 hidden">Amount must be between GHS 100 and your available balance</span>
+                </p>
+            </div>
+
+            <!-- Withdrawal Method Selection -->
+            <div class="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+                <label class="block text-sm font-semibold text-gray-700 mb-3">Withdrawal Method</label>
+                <div class="space-y-3">
+                    <!-- Mobile Money Option -->
+                    <label class="method-option flex items-center justify-between p-4 rounded-xl border-2 cursor-pointer transition-all duration-200
+                        {% if selected_method == 'mobile_money' %}border-blue-500 bg-blue-50/50{% else %}border-gray-200 hover:border-gray-300{% endif %}">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center">
+                                <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="font-semibold text-gray-900">Mobile Money</p>
+                                <p class="text-xs text-gray-500">MTN, Vodafone, AirtelTigo</p>
+                            </div>
+                        </div>
+                        <input type="radio" name="withdrawal_method" value="mobile_money" class="w-5 h-5 text-blue-600" 
+                            {% if selected_method == 'mobile_money' or not selected_method %}checked{% endif %}>
+                    </label>
+
+                    <!-- Bank Transfer Option -->
+                    <label class="method-option flex items-center justify-between p-4 rounded-xl border-2 cursor-pointer transition-all duration-200
+                        {% if selected_method == 'bank_transfer' %}border-blue-500 bg-blue-50/50{% else %}border-gray-200 hover:border-gray-300{% endif %}">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center">
+                                <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="font-semibold text-gray-900">Bank Transfer</p>
+                                <p class="text-xs text-gray-500">All Ghanaian banks</p>
+                            </div>
+                        </div>
+                        <input type="radio" name="withdrawal_method" value="bank_transfer" class="w-5 h-5 text-blue-600"
+                            {% if selected_method == 'bank_transfer' %}checked{% endif %}>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Mobile Money Details (conditional) -->
+            <div id="mobile-money-details" class="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm space-y-4 
+                {% if selected_method == 'bank_transfer' %}hidden{% endif %}">
+                <h3 class="text-sm font-semibold text-gray-700">Mobile Money Information</h3>
+                
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-2">Network Provider</label>
+                    <select name="network" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100">
+                        <option value="">Select network</option>
+                        <option value="mtn" {% if network == 'mtn' %}selected{% endif %}>MTN Mobile Money</option>
+                        <option value="vodafone" {% if network == 'vodafone' %}selected{% endif %}>Vodafone Cash</option>
+                        <option value="airteltigo" {% if network == 'airteltigo' %}selected{% endif %}>AirtelTigo Money</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-2">Phone Number</label>
+                    <div class="flex items-center gap-2 bg-gray-50 rounded-xl px-4 py-3 border border-gray-200 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100">
+                        <span class="text-gray-500">+233</span>
+                        <input type="tel" name="phone_number" placeholder="XX XXX XXXX" value="{{ phone_number|default:'' }}"
+                            class="w-full bg-transparent outline-none text-gray-900 placeholder-gray-400">
+                    </div>
+                    <p class="text-xs text-gray-400 mt-1">Enter phone number without country code</p>
+                </div>
+            </div>
+
+            <!-- Bank Transfer Details (conditional) -->
+            <div id="bank-transfer-details" class="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm space-y-4 
+                {% if selected_method != 'bank_transfer' %}hidden{% endif %}">
+                <h3 class="text-sm font-semibold text-gray-700">Bank Account Information</h3>
+                
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-2">Bank Name</label>
+                    <select name="bank_name" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100">
+                        <option value="">Select bank</option>
+                        <option value="Ghana Commercial Bank" {% if bank_name == 'Ghana Commercial Bank' %}selected{% endif %}>Ghana Commercial Bank</option>
+                        <option value="Ecobank" {% if bank_name == 'Ecobank' %}selected{% endif %}>Ecobank</option>
+                        <option value="Access Bank" {% if bank_name == 'Access Bank' %}selected{% endif %}>Access Bank</option>
+                        <option value="Stanbic Bank" {% if bank_name == 'Stanbic Bank' %}selected{% endif %}>Stanbic Bank</option>
+                        <option value="Standard Chartered" {% if bank_name == 'Standard Chartered' %}selected{% endif %}>Standard Chartered</option>
+                        <option value="Absa Bank" {% if bank_name == 'Absa Bank' %}selected{% endif %}>Absa Bank</option>
+                        <option value="Fidelity Bank" {% if bank_name == 'Fidelity Bank' %}selected{% endif %}>Fidelity Bank</option>
+                        <option value="First National Bank" {% if bank_name == 'First National Bank' %}selected{% endif %}>First National Bank</option>
+                        <option value="Universal Merchant Bank" {% if bank_name == 'Universal Merchant Bank' %}selected{% endif %}>Universal Merchant Bank</option>
+                        <option value="Prudential Bank" {% if bank_name == 'Prudential Bank' %}selected{% endif %}>Prudential Bank</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-2">Account Number</label>
+                    <input type="text" name="account_number" placeholder="Enter account number" value="{{ account_number|default:'' }}"
+                        class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-2">Account Holder Name</label>
+                    <input type="text" name="account_name" placeholder="Full name on account" value="{{ account_name|default:'' }}"
+                        class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100">
+                </div>
+            </div>
+
+            <!-- Confirm Button -->
+            <button type="submit" class="w-full py-4 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold rounded-2xl transition-all duration-300 shadow-lg shadow-blue-200 active:scale-[0.98]">
+                Confirm Withdrawal
+            </button>
+
+            <!-- Important Notes -->
+            <div class="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+                <div class="flex items-start gap-3">
+                    <svg class="w-5 h-5 text-yellow-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                    <div class="text-xs text-gray-600 space-y-2">
+                        <p class="font-semibold text-gray-800 text-sm">📋 Withdrawal Guidelines</p>
+                        <p>• Minimum withdrawal amount is <strong>GHS 100</strong></p>
+                        <p>• Processing takes 5-30 minutes for mobile money</p>
+                        <p>• Bank transfers may take 1-2 business hours</p>
+                        <p>• Withdrawals are processed to the provided account only</p>
+                        <p>• Ensure all details are correct before submitting</p>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    .animate-fade-in {
+        animation: fadeIn 0.5s ease-out;
+    }
+    
+    .method-option {
+        transition: all 0.2s ease;
+    }
+    
+    .method-option:has(input:checked) {
+        border-color: #3b82f6;
+        background-color: #eff6ff;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const balance = {{ user_balance.balance|default:0 }};
+        const amountInput = document.getElementById('amount');
+        const maxBtn = document.getElementById('max-withdraw');
+        const quickAmountBtns = document.querySelectorAll('.quick-amount');
+        const methodRadios = document.querySelectorAll('input[name="withdrawal_method"]');
+        const mobileDetails = document.getElementById('mobile-money-details');
+        const bankDetails = document.getElementById('bank-transfer-details');
+        const amountError = document.getElementById('amount-error');
+        const withdrawForm = document.querySelector('form');
+
+        // Quick amount buttons
+        quickAmountBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                const amount = parseInt(this.getAttribute('data-amount'));
+                amountInput.value = amount;
+                validateAmount(amount);
+            });
+        });
+
+        // Max withdrawal button
+        if (maxBtn) {
+            maxBtn.addEventListener('click', function() {
+                const maxAmount = Math.min(balance, 1000000);
+                amountInput.value = maxAmount;
+                validateAmount(maxAmount);
+            });
+        }
+
+        // Amount validation
+        function validateAmount(amount) {
+            if (amount < 100) {
+                amountError.classList.remove('hidden');
+                amountError.textContent = 'Minimum withdrawal amount is GHS 100';
+                return false;
+            } else if (amount > balance) {
+                amountError.classList.remove('hidden');
+                amountError.textContent = 'Amount exceeds your available balance';
+                return false;
+            } else {
+                amountError.classList.add('hidden');
+                return true;
+            }
+        }
+
+        amountInput.addEventListener('input', function() {
+            const amount = parseFloat(this.value) || 0;
+            validateAmount(amount);
+        });
+
+        // Toggle withdrawal method details
+        methodRadios.forEach(radio => {
+            radio.addEventListener('change', function() {
+                if (this.value === 'mobile_money') {
+                    mobileDetails.classList.remove('hidden');
+                    bankDetails.classList.add('hidden');
+                } else if (this.value === 'bank_transfer') {
+                    mobileDetails.classList.add('hidden');
+                    bankDetails.classList.remove('hidden');
+                }
+            });
+        });
+
+        // Form validation before submit
+        withdrawForm.addEventListener('submit', function(e) {
+            const amount = parseFloat(amountInput.value) || 0;
+            
+            if (!validateAmount(amount)) {
+                e.preventDefault();
+                amountInput.focus();
+                return;
+            }
+
+            const selectedMethod = document.querySelector('input[name="withdrawal_method"]:checked').value;
+            
+            if (selectedMethod === 'mobile_money') {
+                const network = document.querySelector('select[name="network"]').value;
+                const phone = document.querySelector('input[name="phone_number"]').value;
+                
+                if (!network) {
+                    e.preventDefault();
+                    alert('Please select your mobile money network');
+                    return;
+                }
+                if (!phone || phone.replace(/\s/g, '').length < 9) {
+                    e.preventDefault();
+                    alert('Please enter a valid phone number');
+                    return;
+                }
+            } else if (selectedMethod === 'bank_transfer') {
+                const bankName = document.querySelector('select[name="bank_name"]').value;
+                const accountNumber = document.querySelector('input[name="account_number"]').value;
+                const accountName = document.querySelector('input[name="account_name"]').value;
+                
+                if (!bankName) {
+                    e.preventDefault();
+                    alert('Please select your bank');
+                    return;
+                }
+                if (!accountNumber || accountNumber.length < 10) {
+                    e.preventDefault();
+                    alert('Please enter a valid account number');
+                    return;
+                }
+                if (!accountName) {
+                    e.preventDefault();
+                    alert('Please enter the account holder name');
+                    return;
+                }
+            }
+        });
+    });
+</script>
+
+{% include "iCare/partials/footer.html" %}
+{% endblock %}

@@ -1,0 +1,275 @@
+{% extends "iCare/base.html" %}
+{% load static %}
+{% block title %}Recharge Wallet{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+    
+    <!-- Modern Header with floating effect -->
+    <div class="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-100 px-5 py-3 flex items-center justify-between shadow-sm">
+        <button class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 active:bg-gray-200 transition-all duration-200" onclick="window.history.back()">
+            <svg class="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+        </button>
+        <h1 class="text-lg font-bold text-gray-900">Recharge</h1>
+        <a href="{% url 'recharge_records' %}" class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 active:bg-gray-200 transition-all duration-200">
+            <svg class="w-5 h-5 text-gray-700" viewBox="0 0 24 24" fill="none">
+                <path d="M12 21C10.75 21 9.57933 20.7627 8.488 20.288C7.39667 19.8133 6.44667 19.1717 5.638 18.363C4.82933 17.5543 4.18767 16.6043 3.713 15.513C3.23833 14.4217 3.00067 13.2507 3 12C2.99933 10.7493 3.237 9.57867 3.713 8.488C4.189 7.39733 4.83033 6.44733 5.637 5.638C6.44367 4.82867 7.39367 4.187 8.487 3.713C9.58034 3.239 10.7513 3.00133 12 3C13.3667 3 14.6627 3.29167 15.888 3.875C17.1133 4.45833 18.1507 5.28333 19 6.35V5C19 4.71667 19.096 4.47933 19.288 4.288C19.48 4.09667 19.7173 4.00067 20 4C20.2827 3.99933 20.5203 4.09533 20.713 4.288C20.9057 4.48067 21.0013 4.718 21 5V9C21 9.28333 20.904 9.521 20.712 9.713C20.52 9.905 20.2827 10.0007 20 10H16C15.7167 10 15.4793 9.904 15.288 9.712C15.0967 9.52 15.0007 9.28267 15 9C14.9993 8.71733 15.0953 8.48 15.288 8.288C15.4807 8.096 15.718 8 16 8H17.75C17.0667 7.06667 16.225 6.33333 15.225 5.8C14.225 5.26667 13.15 5 12 5C10.05 5 8.396 5.67933 7.038 7.038C5.68 8.39667 5.00067 10.0507 5 12C4.99933 13.9493 5.67867 15.6037 7.038 16.963C8.39734 18.3223 10.0513 19.0013 12 19C13.5833 19 15 18.525 16.25 17.575C17.5 16.625 18.325 15.4 18.725 13.9C18.8083 13.6333 18.9583 13.4333 19.175 13.3C19.3917 13.1667 19.6333 13.1167 19.9 13.15C20.1833 13.1833 20.4083 13.304 20.575 13.512C20.7417 13.72 20.7917 13.9493 20.725 14.2C20.2417 16.1833 19.1917 17.8127 17.575 19.088C15.9583 20.3633 14.1 21.0007 12 21ZM13 11.6L15.5 14.1C15.6833 14.2833 15.775 14.5167 15.775 14.8C15.775 15.0833 15.6833 15.3167 15.5 15.5C15.3167 15.6833 15.0833 15.775 14.8 15.775C14.5167 15.775 14.2833 15.6833 14.1 15.5L11.3 12.7C11.2 12.6 11.125 12.4877 11.075 12.363C11.025 12.2383 11 12.109 11 11.975V8C11 7.71667 11.096 7.47933 11.288 7.288C11.48 7.09667 11.7173 7.00067 12 7C12.2827 6.99933 12.5203 7.09533 12.713 7.288C12.9057 7.48067 13.0013 7.718 13 8V11.6Z" fill="currentColor"/>
+            </svg>
+        </a>
+    </div>
+
+    <main class="pt-20 pb-8 px-5 max-w-lg mx-auto">
+        
+        <!-- Hero / Featured Banner - sleek modern gradient -->
+        <div class="mb-6 rounded-2xl overflow-hidden shadow-lg">
+            <div class="relative">
+                <img src="https://a-studioaa.com/assets/recharge-banner-CLe6Gr_4.jpg" alt="recharge offer" class="w-full h-36 object-cover">
+                <div class="absolute inset-0 bg-gradient-to-r from-black/20 to-transparent"></div>
+            </div>
+        </div>
+
+        <form method="post" class="space-y-7">
+            {% csrf_token %}
+            <input id="amount-input" type="hidden" name="amount" value="{{ selected_amount }}">
+            <input id="payment-method-input" type="hidden" name="payment_method" value="{{ selected_payment }}">
+
+            <!-- Alert messages with modern design -->
+            {% if error %}
+            <div class="flex items-center gap-3 bg-red-50 border-l-4 border-red-500 rounded-xl p-4 text-sm text-red-800 shadow-sm">
+                <svg class="w-5 h-5 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <span>{{ error }}</span>
+            </div>
+            {% endif %}
+
+            {% if success %}
+            <div class="flex items-center gap-3 bg-green-50 border-l-4 border-green-500 rounded-xl p-4 text-sm text-green-800 shadow-sm">
+                <svg class="w-5 h-5 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <span>{{ success }}</span>
+            </div>
+            {% endif %}
+
+            <!-- Section: Quick amount -->
+            <div>
+                <div class="flex justify-between items-end mb-3">
+                    <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide">Quick top-up</h2>
+                    <span class="text-xs text-gray-400">Min GHS 100</span>
+                </div>
+                <div class="grid grid-cols-4 gap-3">
+                    {% for amount in preset_amounts %}
+                    <button type="button" data-amount="{{ amount }}" 
+                        class="amount-option py-3 rounded-2xl text-base font-semibold transition-all duration-200 
+                        {% if selected_amount == amount|stringformat:"s" %}bg-blue-600 text-white shadow-md shadow-blue-200 scale-[1.02]{% else %}bg-gray-100 text-gray-800 hover:bg-gray-200{% endif %}">
+                        {{ amount }}
+                    </button>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Custom amount with elegant input -->
+            <div class="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Custom amount (GHS)</label>
+                <div class="flex items-center gap-2 bg-gray-50 rounded-xl px-4 py-3 border border-gray-200 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100 transition">
+                    <span class="text-xl font-bold text-blue-600">₵</span>
+                    <input id="custom-amount" name="custom_amount" type="number" min="100" step="1" 
+                        placeholder="Enter amount" value="{{ custom_amount }}"
+                        class="w-full bg-transparent outline-none text-lg font-medium text-gray-900 placeholder-gray-400">
+                </div>
+                <p class="text-xs text-gray-400 mt-2">Minimum recharge: <span class="font-medium">GHS 100</span></p>
+            </div>
+
+            <!-- Payment methods: modern cards with interactive states -->
+            <div>
+                <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Select payment method</h2>
+                <div class="space-y-3">
+                    <button type="button" data-method="GHS 1" 
+                        class="payment-card w-full p-4 rounded-2xl text-left transition-all duration-200 border 
+                        {% if selected_payment == 'GHS 1' %}border-blue-500 bg-blue-50/70 ring-2 ring-blue-200{% else %}border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm{% endif %}">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-4">
+                                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-sm">
+                                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+                                </div>
+                                <div>
+                                    <p class="font-semibold text-gray-900">Deposit GHS 1 (test gateway)</p>
+                                    <p class="text-xs text-gray-500">Instant confirmation</p>
+                                </div>
+                            </div>
+                            <div class="w-6 h-6 rounded-full border-2 flex items-center justify-center 
+                                {% if selected_payment == 'GHS 1' %}border-blue-500 bg-blue-500{% else %}border-gray-300{% endif %}">
+                                {% if selected_payment == 'GHS 1' %}
+                                <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </button>
+                    <!-- you can uncomment more methods if needed, but keeping minimal -->
+                </div>
+            </div>
+
+            <!-- CTA Button with modern gradient -->
+            <button type="submit" class="w-full py-4 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold rounded-2xl transition-all duration-300 shadow-lg shadow-blue-200 active:scale-[0.98]">
+                Confirm & proceed
+            </button>
+
+            <!-- Important notes - redesigned as clean cards -->
+            <div class="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm mt-4">
+                <div class="flex items-start gap-3">
+                    <svg class="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <div class="text-xs text-gray-600 space-y-2">
+                        <p class="font-semibold text-gray-800 text-sm">⚠️ Important reminders</p>
+                        <p>1. Minimum top-up is <strong class="text-gray-900">GHS 100</strong> — lower amounts won't be credited.</p>
+                        <p>2. Always use the latest account number displayed on the payment page.</p>
+                        <p>3. Follow the payment gateway instructions carefully.</p>
+                        <p>4. If funds are not credited within 15 minutes, upload proof or contact support.</p>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </main>
+</div>
+
+<style>
+    /* hide scrollbar for carousel if needed later, but preserve modern look */
+    .scrollbar-hide::-webkit-scrollbar {
+        display: none;
+    }
+    .scrollbar-hide {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+    /* smooth interactions */
+    button, .amount-option, .payment-card {
+        cursor: pointer;
+    }
+    input[type="number"]::-webkit-inner-spin-button, 
+    input[type="number"]::-webkit-outer-spin-button {
+        opacity: 0.5;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const amountInput = document.getElementById('amount-input');
+        const customAmountField = document.getElementById('custom-amount');
+        const amountOptions = document.querySelectorAll('.amount-option');
+        const paymentButtons = document.querySelectorAll('.payment-card');
+        const paymentMethodInput = document.getElementById('payment-method-input');
+
+        // --- AMOUNT PRESET LOGIC ---
+        function updateAmountSelection(selectedElement, amountValue) {
+            amountInput.value = amountValue;
+            customAmountField.value = amountValue;
+            
+            amountOptions.forEach(btn => {
+                btn.classList.remove('bg-blue-600', 'text-white', 'shadow-md', 'shadow-blue-200', 'scale-[1.02]');
+                btn.classList.add('bg-gray-100', 'text-gray-800', 'hover:bg-gray-200');
+            });
+            selectedElement.classList.add('bg-blue-600', 'text-white', 'shadow-md', 'shadow-blue-200', 'scale-[1.02]');
+            selectedElement.classList.remove('bg-gray-100', 'text-gray-800', 'hover:bg-gray-200');
+        }
+
+        amountOptions.forEach(button => {
+            button.addEventListener('click', function (e) {
+                const amount = this.getAttribute('data-amount');
+                updateAmountSelection(this, amount);
+            });
+        });
+
+        // custom amount input sync
+        customAmountField.addEventListener('input', function () {
+            let rawValue = this.value.trim();
+            if (rawValue === "") {
+                amountInput.value = "";
+            } else {
+                let numValue = parseFloat(rawValue);
+                if (!isNaN(numValue)) {
+                    amountInput.value = numValue;
+                } else {
+                    amountInput.value = rawValue;
+                }
+            }
+            // remove active style from preset buttons
+            amountOptions.forEach(btn => {
+                btn.classList.remove('bg-blue-600', 'text-white', 'shadow-md', 'shadow-blue-200', 'scale-[1.02]');
+                btn.classList.add('bg-gray-100', 'text-gray-800', 'hover:bg-gray-200');
+            });
+        });
+
+        // --- PAYMENT METHOD SELECTION (clean toggle) ---
+        paymentButtons.forEach(btn => {
+            btn.addEventListener('click', function () {
+                const method = this.getAttribute('data-method');
+                paymentMethodInput.value = method;
+                
+                paymentButtons.forEach(card => {
+                    card.classList.remove('border-blue-500', 'bg-blue-50/70', 'ring-2', 'ring-blue-200');
+                    card.classList.add('border-gray-200', 'bg-white');
+                    // reset inner radio-like marker
+                    const markerDiv = card.querySelector('div.flex.items-center.justify-between > div:last-child');
+                    if (markerDiv) {
+                        markerDiv.classList.remove('border-blue-500', 'bg-blue-500');
+                        markerDiv.classList.add('border-gray-300');
+                        markerDiv.innerHTML = '';
+                    }
+                });
+                
+                this.classList.remove('border-gray-200', 'bg-white');
+                this.classList.add('border-blue-500', 'bg-blue-50/70', 'ring-2', 'ring-blue-200');
+                
+                const markerDiv = this.querySelector('div.flex.items-center.justify-between > div:last-child');
+                if (markerDiv) {
+                    markerDiv.classList.remove('border-gray-300');
+                    markerDiv.classList.add('border-blue-500', 'bg-blue-500');
+                    markerDiv.innerHTML = `<svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg>`;
+                }
+            });
+        });
+        
+        // --- initial UI sync based on backend selected values (if any) ---
+        if (amountInput.value && amountInput.value !== "") {
+            const matchedPreset = Array.from(amountOptions).find(btn => btn.getAttribute('data-amount') === amountInput.value);
+            if (matchedPreset) {
+                updateAmountSelection(matchedPreset, amountInput.value);
+            } else {
+                customAmountField.value = amountInput.value;
+                amountOptions.forEach(btn => {
+                    btn.classList.remove('bg-blue-600', 'text-white', 'shadow-md', 'shadow-blue-200', 'scale-[1.02]');
+                    btn.classList.add('bg-gray-100', 'text-gray-800', 'hover:bg-gray-200');
+                });
+            }
+        } else if (customAmountField.value && customAmountField.value !== "") {
+            amountInput.value = customAmountField.value;
+        }
+        
+        // initial payment method highlight
+        if (paymentMethodInput.value) {
+            const activePayment = Array.from(paymentButtons).find(btn => btn.getAttribute('data-method') === paymentMethodInput.value);
+            if (activePayment) {
+                paymentButtons.forEach(card => {
+                    card.classList.remove('border-blue-500', 'bg-blue-50/70', 'ring-2', 'ring-blue-200');
+                    card.classList.add('border-gray-200', 'bg-white');
+                    const markerDiv = card.querySelector('div.flex.items-center.justify-between > div:last-child');
+                    if (markerDiv) {
+                        markerDiv.classList.remove('border-blue-500', 'bg-blue-500');
+                        markerDiv.classList.add('border-gray-300');
+                        markerDiv.innerHTML = '';
+                    }
+                });
+                activePayment.classList.remove('border-gray-200', 'bg-white');
+                activePayment.classList.add('border-blue-500', 'bg-blue-50/70', 'ring-2', 'ring-blue-200');
+                const marker = activePayment.querySelector('div.flex.items-center.justify-between > div:last-child');
+                if (marker) {
+                    marker.classList.remove('border-gray-300');
+                    marker.classList.add('border-blue-500', 'bg-blue-500');
+                    marker.innerHTML = `<svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg>`;
+                }
+            }
+        }
+    });
+</script>
+
+
+{% include "iCare/partials/footer.html" %}
+{% endblock %}
