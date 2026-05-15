@@ -24,7 +24,7 @@ class PaystackService:
             'Content-Type': 'application/json',
         }
     
-    def initialize_payment(self, email, amount, reference, metadata=None):
+    def initialize_payment(self, email, amount, reference, callback_url=None, metadata=None):
         """
         Initialize a Paystack payment.
         
@@ -32,6 +32,7 @@ class PaystackService:
             email: Customer email
             amount: Amount in GHS (will be converted to Paystack pesewas - 1 GHS = 100 pesewas)
             reference: Unique reference for tracking
+            callback_url: Optional URL to redirect after payment
             metadata: Optional dict with additional data
         
         Returns:
@@ -52,6 +53,10 @@ class PaystackService:
                 'reference': reference,
                 'metadata': metadata or {},
             }
+            
+            # Add callback URL if provided
+            if callback_url:
+                payload['callback_url'] = callback_url
             
             logger.info(f"Initializing Paystack payment for reference {reference}, amount {amount} GHS")
             response = requests.post(

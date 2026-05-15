@@ -2,14 +2,14 @@
 {% load static %}
 {% block content %}
 {% include "iCare/partials/nav.html" %}
-    <section class="bg-slate-100 p-2 rounded-md mx-w-4xl mb-[20px]">
+    <section class="bg-slate-100 p-2 rounded-md max-w-lg mx-auto mb-[20px] pb-[100px]">
         <div class="h-[180px] relative w-full overflow-hidden">
             <img src="{% static "imgs/mac-bg.jpg" %}" alt="" class="absolute inset-0 w-full h-full object-cover">
-            <div class="absolute inset-0 bg-gradient-to-r from-black/60 via-black/40 to-black/90"></div>
+            <div class="absolute inset-0 bg-gradient-to-r from-black/0 via-black/20 to-black/90"></div>
             <div class="absolute inset-y-0 right-0 flex items-center justify-center max-w-[55%] p-4">
                 <div class="flex flex-col items-center justify-center">
                     <h1 class="text-2xl text-black/80 font-bold">Apple</h1>
-                    <p class="text-gray-700 mt-2">Shareholder Store</p>
+                    <p class="text-white/90 mt-2">Shareholder Store</p>
                     <a href="{% url "product" %}" class="text-blue-500 hover:text-blue-700 underline">
                         <button class="bg-black/90 hover:bg-black/70 text-white font-bold py-2 px-4 rounded-full mt-2">
                             Shop Now
@@ -59,16 +59,6 @@
                     <a href="{% url "check_in" %}" class="inline-flex items-center justify-center rounded-full bg-black/90 px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-blue-500/25 hover:bg-black/60 transition">
                         GO &gt;
                     </a>
-                </div>
-            </div>
-        </div>
-
-        <!--Available Balance-->
-        <div class="flex gap-2 mt-2">
-            <div class="shadow-md rounded-lg w-full">
-                <div class="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-4">
-                    <h3 class="text-lg font-bold text-gray-900">Available Balance</h3>
-                    <p class="text-2xl font-bold text-blue-600 mt-2">₵ {{ user_balance.balance|floatformat:2 }}</p>
                 </div>
             </div>
         </div>

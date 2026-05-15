@@ -1,6 +1,6 @@
 <!-- Mobile Bottom Navigation Bar -->
-<footer class="fixed bottom-0 mx-w-4xl left-0 right-0 z-50 bg-white/95 backdrop-blur-lg border-t border-gray-200 shadow-lg">
-    <div class="flex justify-around items-center px-2 pt-2 pb-6">
+<footer class="fixed bottom-0 mx-w-4xl max-w-lg mx-auto  left-0 right-0 z-50 bg-white/95 backdrop-blur-lg border-t border-gray-200 shadow-lg">
+    <div class="flex justify-around items-center px-2 pt-2 pb-6 max-w-lg mx-auto ">
         
         <!-- Home -->
         <a href="{% url 'home' %}" class="flex flex-col items-center gap-0 group">
@@ -24,7 +24,7 @@
         </a>
 
         <!-- Team -->
-        <a href="#" class="flex flex-col items-center gap-0 group">
+        <a href="{% url "team" %}" class="flex flex-col items-center gap-0 group">
             <div class="p-2 rounded-xl transition-all duration-200 group-hover:bg-green-100">
                 <svg class="h-6 w-6 text-gray-600 group-hover:text-green-600 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
@@ -52,10 +52,10 @@
     
     // Define mappings for each nav item
     const navItems = [
-        { element: document.querySelector('a[href*="home"]'), path: '/home', activeColor: 'text-blue-600', bgColor: 'bg-blue-50' },
-        { element: document.querySelector('a[href*="product"]'), path: '/product', activeColor: 'text-purple-600', bgColor: 'bg-purple-50' },
-        { element: document.querySelector('a[href*="team"]'), path: '/team', activeColor: 'text-green-600', bgColor: 'bg-green-50' },
-        { element: document.querySelector('a[href*="profile"]'), path: '/profile', activeColor: 'text-orange-600', bgColor: 'bg-orange-50' }
+        { element: document.querySelector('a[href*="home"]'), path: '/home', activeColor: 'text-blue-600', bgColor: 'bg-blue-200' },
+        { element: document.querySelector('a[href*="product"]'), path: '/product', activeColor: 'text-purple-600', bgColor: 'bg-purple-200' },
+        { element: document.querySelector('a[href*="team"]'), path: '/team', activeColor: 'text-green-600', bgColor: 'bg-green-200' },
+        { element: document.querySelector('a[href*="profile"]'), path: '/profile', activeColor: 'text-orange-600', bgColor: 'bg-orange-200' }
     ];
     
     // Add active class to current page

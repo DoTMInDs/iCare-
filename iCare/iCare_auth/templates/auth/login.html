@@ -123,24 +123,40 @@
                 <div>
                     <label for="phone" class="sr-only">Phone number</label>
                     <div class="relative">
-                        <span class="absolute inset-y-0 left-0 pl-4 flex items-center text-white/70 text-sm">+233</span>
+                        <span class="absolute inset-y-0 left-0 pl-4 flex items-center text-white/30 text-sm">+233</span>
                         <input type="tel"
                                name="phone"
                                id="phone"
                                required
-                               class="w-full pl-16 pr-4 py-4 bg-white/10 border border-white/10 rounded-full text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-white/20 transition duration-200"
-                               placeholder="Enter phone number">
+                               class="w-full pl-16 pr-4 py-4 bg-white/10 border border-white/10 rounded-full text-white placeholder:text-white/10 focus:outline-none focus:ring-2 focus:ring-white/20 transition duration-200"
+                               placeholder="247 123 456">
                     </div>
                 </div>
 
-                <div>
+                <div class="relative">
+                    {% comment %} <button class="absolute inset-y-0 left-0 px-6 mr-4 text-slate-700" type="button">
+                        <svg width="18" height="18"  viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M6 22C5.45 22 4.97933 21.8043 4.588 21.413C4.19667 21.0217 4.00067 20.5507 4 20V10C4 9.45 4.196 8.97933 4.588 8.588C4.98 8.19667 5.45067 8.00067 6 8H7V6C7 4.61667 7.48767 3.43767 8.463 2.463C9.43833 1.48833 10.6173 1.00067 12 1C13.3827 0.999334 14.562 1.487 15.538 2.463C16.514 3.439 17.0013 4.618 17 6V8H18C18.55 8 19.021 8.196 19.413 8.588C19.805 8.98 20.0007 9.45067 20 10V20C20 20.55 19.8043 21.021 19.413 21.413C19.0217 21.805 18.5507 22.0007 18 22H6ZM6 20H18V10H6V20ZM13.413 16.412C13.8043 16.0213 14 15.5507 14 15C14 14.4493 13.8043 13.9787 13.413 13.588C13.0217 13.1973 12.5507 13.0013 12 13C11.4493 12.9987 10.9787 13.1947 10.588 13.588C10.1973 13.9813 10.0013 14.452 10 15C9.99867 15.548 10.1947 16.019 10.588 16.413C10.9813 16.807 11.452 17.0027 12 17C12.548 16.9973 13.019 16.8007 13.413 16.412ZM9 8H15V6C15 5.16667 14.7083 4.45833 14.125 3.875C13.5417 3.29167 12.8333 3 12 3C11.1667 3 10.4583 3.29167 9.875 3.875C9.29167 4.45833 9 5.16667 9 6V8Z" fill="currentColor"/>
+                        </svg>
+                    </button> {% endcomment %}
                     <label for="password" class="sr-only">Password</label>
                     <input type="password"
                            name="password"
                            id="password"
                            required
-                           class="w-full px-4 py-4 bg-white/10 border border-white/10 rounded-full text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-white/20 transition duration-200"
+                           class="w-full px-4 py-4 bg-white/10 border border-white/10 rounded-full text-white placeholder:text-white/10 focus:outline-none focus:ring-2 focus:ring-white/20 transition duration-200"
                            placeholder="Enter password">
+                    
+                    <!--eye icon-->
+                    <button type="button" id="toggle-password" class="absolute inset-y-0 right-0 pr-4 flex items-center text-white/30 hover:text-white transition">
+                        <svg id="eye-open" class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                        </svg>
+                        <svg id="eye-closed" class="hidden h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 012.563-4.243m0 .858A10.025 10.025 0 0112 5c4.478 0 8.268 2.943 9.543 7a9.973 9.973 0 01-4.031 5.622m-.846-.423A10.015 10.015 0 0112 17c-.996-.001-1.986-.157-2.933-.457m6.908-6.908A3 3 0 11-4.243-4.243m0 0L21 21"/>
+                        </svg>
+                    </button>
                 </div>
 
 
@@ -225,11 +241,21 @@ function closeNotification(type) {
 }
 
 // Toggle password visibility
-function togglePassword() {
+document.getElementById('toggle-password')?.addEventListener('click', function() {
     const passwordInput = document.getElementById('password');
-    const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-    passwordInput.setAttribute('type', type);
-}
+    const eyeOpenIcon = document.getElementById('eye-open');
+    const eyeClosedIcon = document.getElementById('eye-closed');
+    
+    if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        eyeOpenIcon.classList.add('hidden');
+        eyeClosedIcon.classList.remove('hidden');
+    } else {
+        passwordInput.type = 'password';
+        eyeOpenIcon.classList.remove('hidden');
+        eyeClosedIcon.classList.add('hidden');
+    }
+});
 
 // Auto-format phone number
 document.getElementById('phone')?.addEventListener('input', function(e) {

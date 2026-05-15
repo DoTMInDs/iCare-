@@ -180,8 +180,6 @@ class Product(models.Model):
         return f"{self.name} - {self.price}"  
 
 
-
-
 class UserInvestment(models.Model):
     STATUS_CHOICES = [
         ('pending', 'Pending'),
@@ -203,10 +201,12 @@ class UserInvestment(models.Model):
     )
     amount = models.DecimalField(max_digits=12, decimal_places=2)
     status = models.CharField(max_length=16, choices=STATUS_CHOICES, default='pending')
+    transaction_reference = models.CharField(max_length=64, blank=True, null=True, help_text='Reference from ProductTransaction')
     purchased_at = models.DateTimeField(auto_now_add=True)
     expires_at = models.DateTimeField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
     
     class Meta:
         ordering = ['-created_at']
@@ -274,3 +274,369 @@ class UserInvestment(models.Model):
     
     def __str__(self):
         return f"{self.user.phone_number} - {self.product.name} - {self.amount}"
+
+
+class ProductTransaction(models.Model):
+    """Track product purchase transactions"""
+    STATUS_PENDING = 'pending'
+    STATUS_IN_PROGRESS = 'in_progress'
+    STATUS_SUCCESS = 'success'
+    STATUS_FAILED = 'failed'
+    
+    STATUS_CHOICES = [
+        (STATUS_PENDING, 'Pending'),
+        (STATUS_IN_PROGRESS, 'In Progress'),
+        (STATUS_SUCCESS, 'Success'),
+        (STATUS_FAILED, 'Failed'),
+    ]
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='product_transactions'
+    )
+    product = models.ForeignKey(
+        'Product',
+        on_delete=models.CASCADE,
+        related_name='transactions'
+    )
+    reference = models.CharField(max_length=64, unique=True)
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    currency = models.CharField(max_length=10, default='GHS')
+    status = models.CharField(max_length=16, choices=STATUS_CHOICES, default=STATUS_PENDING)
+    payment_method = models.CharField(max_length=64, blank=True, null=True)
+    
+    # Paystack integration fields
+    paystack_reference = models.CharField(max_length=255, blank=True, null=True)
+    paystack_access_code = models.CharField(max_length=255, blank=True, null=True)
+    paystack_auth_url = models.URLField(blank=True, null=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"{self.reference} - {self.product.name} - {self.amount}"
+    
+    def mark_in_progress(self):
+        self.status = self.STATUS_IN_PROGRESS
+        self.save(update_fields=['status', 'updated_at'])
+    
+    def mark_success(self):
+        self.status = self.STATUS_SUCCESS
+        self.save(update_fields=['status', 'updated_at'])
+    
+    def mark_failed(self):
+        self.status = self.STATUS_FAILED
+        self.save(update_fields=['status', 'updated_at'])
+
+
+class SavedAccount(models.Model):
+    ACCOUNT_TYPES = [
+        ('mobile_money', 'Mobile Money'),
+        ('bank_transfer', 'Bank Transfer'),
+    ]
+    
+    NETWORKS = [
+        ('mtn', 'MTN Mobile Money'),
+        ('vodafone', 'Vodafone Cash'),
+        ('airteltigo', 'AirtelTigo Money'),
+    ]
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='saved_accounts'
+    )
+    account_type = models.CharField(max_length=32, choices=ACCOUNT_TYPES)
+    
+    # Mobile Money fields
+    network = models.CharField(max_length=32, choices=NETWORKS, blank=True, null=True)
+    phone_number = models.CharField(max_length=15, blank=True, null=True)
+    
+    # Bank Transfer fields
+    bank_name = models.CharField(max_length=100, blank=True, null=True)
+    account_number = models.CharField(max_length=50, blank=True, null=True)
+    account_name = models.CharField(max_length=200, blank=True, null=True)
+    
+    is_default = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-is_default', '-created_at']
+        # Add unique constraints to prevent duplicates
+        constraints = [
+            models.UniqueConstraint(
+                fields=['user', 'account_type', 'network', 'phone_number'],
+                condition=models.Q(account_type='mobile_money'),
+                name='unique_mobile_money_account'
+            ),
+            models.UniqueConstraint(
+                fields=['user', 'account_type', 'bank_name', 'account_number'],
+                condition=models.Q(account_type='bank_transfer'),
+                name='unique_bank_account'
+            ),
+        ]
+    
+    def clean(self):
+        """Clean and validate phone number format"""
+        from django.core.exceptions import ValidationError
+        
+        if self.account_type == 'mobile_money' and self.phone_number:
+            # Remove any non-digit characters
+            self.phone_number = ''.join(filter(str.isdigit, self.phone_number))
+            # Remove leading 0 or 233 if present
+            if self.phone_number.startswith('233'):
+                self.phone_number = self.phone_number[3:]
+            elif self.phone_number.startswith('0'):
+                self.phone_number = self.phone_number[1:]
+            # Ensure length is valid (9 digits for Ghana)
+            if len(self.phone_number) != 9:
+                raise ValidationError('Phone number must be 9 digits (e.g., 202739333)')
+    
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)
+    
+    def __str__(self):
+        if self.account_type == 'mobile_money':
+            return f"{self.get_network_display()} - {self.phone_number}"
+        return f"{self.bank_name} - {self.account_number}"
+
+
+
+class Task(models.Model):
+    CATEGORY_CHOICES = [
+        ('daily', 'Daily Task'),
+        ('one-time', 'One-Time Task'),
+        ('social', 'Social Task'),
+        ('surveys', 'Survey'),
+    ]
+    
+    DIFFICULTY_CHOICES = [
+        ('easy', 'Easy'),
+        ('medium', 'Medium'),
+        ('hard', 'Hard'),
+    ]
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    title = models.CharField(max_length=255)
+    description = models.TextField()
+    instructions = models.TextField(blank=True, null=True)
+    steps = models.JSONField(default=list, blank=True)
+    task_url = models.URLField(blank=True, null=True)
+    reward = models.DecimalField(max_digits=10, decimal_places=2)
+    category = models.CharField(max_length=32, choices=CATEGORY_CHOICES, default='one-time')
+    difficulty = models.CharField(max_length=16, choices=DIFFICULTY_CHOICES, default='easy')
+    estimated_time = models.CharField(max_length=64, blank=True, help_text='E.g., "5 minutes"')
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"{self.title} - ₵{self.reward}"
+
+
+class UserTask(models.Model):
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('completed', 'Completed'),
+        ('failed', 'Failed'),
+    ]
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='completed_tasks'
+    )
+    task = models.ForeignKey(Task, on_delete=models.CASCADE)
+    status = models.CharField(max_length=16, choices=STATUS_CHOICES, default='pending')
+    completed_at = models.DateTimeField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        unique_together = ['user', 'task']
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"{self.user.email} - {self.task.title} - {self.status}"
+
+
+class UserCheckin(models.Model):
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='checkin'
+    )
+    streak = models.IntegerField(default=0)
+    last_checkin_date = models.DateField(blank=True, null=True)
+    total_checkins = models.IntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def __str__(self):
+        return f"{self.user.email} - Streak: {self.streak}"
+    
+
+class ReferralCode(models.Model):
+    """Referral code for each user"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='referral_code'
+    )
+    code = models.CharField(max_length=20, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f"{self.user.phone_number} - {self.code}"
+
+
+class UserReferral(models.Model):
+    """Track who referred whom"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    referrer = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='referred_users'
+    )
+    referred_user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='referred_by'
+    )
+    level = models.IntegerField(default=1, help_text="Referral level (1 = direct, 2 = indirect, etc.)")
+    commission_earned = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['level', '-created_at']
+    
+    def __str__(self):
+        return f"{self.referrer.phone_number} -> {self.referred_user.phone_number} (Level {self.level})"
+
+
+class TeamMember(models.Model):
+    """Team structure with binary tree"""
+    POSITION_CHOICES = [
+        ('left', 'Left'),
+        ('right', 'Right'),
+    ]
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='team_member'
+    )
+    sponsor = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='downline_members'
+    )
+    position = models.CharField(max_length=10, choices=POSITION_CHOICES, blank=True, null=True)
+    left_child = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='parent_left'
+    )
+    right_child = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='parent_right'
+    )
+    left_volume = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    right_volume = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    total_volume = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    is_active = models.BooleanField(default=True)
+    joined_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-joined_at']
+    
+    def __str__(self):
+        return f"{self.user.phone_number} - Sponsor: {self.sponsor.phone_number if self.sponsor else 'None'}"
+    
+    def update_volumes(self):
+        """Update team volumes"""
+        self.left_volume = self.calculate_team_volume(self.left_child)
+        self.right_volume = self.calculate_team_volume(self.right_child)
+        self.total_volume = self.left_volume + self.right_volume
+        self.save(update_fields=['left_volume', 'right_volume', 'total_volume', 'updated_at'])
+        
+        # Update parent volumes
+        if self.sponsor:
+            try:
+                parent_member = TeamMember.objects.get(user=self.sponsor)
+                parent_member.update_volumes()
+            except TeamMember.DoesNotExist:
+                pass
+    
+    def calculate_team_volume(self, child_user):
+        """Calculate total volume for a child team"""
+        if not child_user:
+            return 0
+        
+        try:
+            child_member = TeamMember.objects.get(user=child_user)
+            return child_member.total_volume + (child_member.get_personal_volume())
+        except TeamMember.DoesNotExist:
+            return 0
+    
+    def get_personal_volume(self):
+        """Get user's personal investment volume"""
+        investments = UserInvestment.objects.filter(
+            user=self.user,
+            status='active'
+        ).aggregate(total=models.Sum('amount'))['total'] or 0
+        return float(investments)
+
+
+class ReferralCommission(models.Model):
+    """Track commissions earned from referrals"""
+    COMMISSION_TYPES = [
+        ('direct', 'Direct Commission'),
+        ('binary', 'Binary Commission'),
+        ('matching', 'Matching Bonus'),
+    ]
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='commissions'
+    )
+    from_user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='given_commissions',
+        null=True,
+        blank=True
+    )
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    commission_type = models.CharField(max_length=20, choices=COMMISSION_TYPES)
+    level = models.IntegerField(default=1)
+    description = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_paid = models.BooleanField(default=False)
+    
+    class Meta:
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"{self.user.phone_number} - {self.commission_type} - ₵{self.amount}"

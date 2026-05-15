@@ -1,0 +1,295 @@
+{% extends "iCare/base.html" %}
+{% load static %}
+{% load humanize %}
+{% block title %}Daily Check-in - Earn Rewards{% endblock %}
+
+{% block content %}
+<div class="min-h-screen pb-8">
+    
+    <!-- Modern Floating Header -->
+    <div class="fixed top-0 left-0 right-0 z-50 max-w-lg mx-auto bg-white/80 backdrop-blur-xl border-b border-gray-100 px-5 py-3 flex items-center justify-between shadow-sm">
+        <button class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 active:bg-gray-200 transition-all duration-200" onclick="window.history.back()">
+            <svg class="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+        </button>
+        <h1 class="text-lg font-bold text-gray-900">Daily Check-in</h1>
+        <div class="w-10"></div>
+    </div>
+
+    <div class="pt-20 pb-[70px] px-5 max-w-lg mx-auto bg-slate-100">
+        
+        <!-- Main Check-in Card -->
+        <div class="bg-gradient-to-br from-purple-600 via-pink-500 to-orange-500 rounded-2xl p-6 mb-6 shadow-xl">
+            <div class="text-center">
+                <!-- Fire Animation for Streak -->
+                <div class="inline-flex items-center gap-2 bg-white/20 rounded-full px-4 py-2 mb-4">
+                    <svg class="w-5 h-5 text-yellow-300 animate-pulse" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 2C10 7 4 9 4 14c0 4 4 6 8 6s8-2 8-6c0-5-6-7-8-12z"/>
+                    </svg>
+                    <span class="text-white font-semibold">{{ streak }} Day Streak!</span>
+                </div>
+                
+                <!-- Current Streak Display -->
+                <div class="mb-4">
+                    <p class="text-white/80 text-sm">Current Streak</p>
+                    <p class="text-white text-6xl font-bold">{{ streak }}</p>
+                    <p class="text-white/80 text-xs mt-1">consecutive days</p>
+                </div>
+                
+                <!-- Today's Bonus -->
+                <div class="bg-white/20 rounded-2xl p-4 mb-6">
+                    <p class="text-white/80 text-xs">Today's Check-in Bonus</p>
+                    <p class="text-white text-3xl font-bold">₵{{ today_bonus|floatformat:2|intcomma }}</p>
+                    <p class="text-white/80 text-xs mt-1">
+                        {% if next_streak_bonus %}
+                            Check in tomorrow for ₵{{ next_streak_bonus|floatformat:2|intcomma }}
+                        {% endif %}
+                    </p>
+                </div>
+                
+                <!-- Check-in Button -->
+                {% if has_checked_in_today %}
+                    <div class="bg-green-500/30 rounded-2xl p-4">
+                        <div class="flex items-center justify-center gap-2">
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                            </svg>
+                            <span class="text-white font-semibold">Already Checked In Today!</span>
+                        </div>
+                        <p class="text-white/80 text-xs mt-1">Come back tomorrow for more rewards</p>
+                    </div>
+                {% else %}
+                    <button onclick="checkIn()" class="w-full py-4 bg-white text-purple-600 rounded-2xl font-bold text-lg hover:bg-gray-100 transition shadow-lg transform hover:scale-105">
+                        ✨ Check In Now ✨
+                    </button>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Stats Summary -->
+        <div class="grid grid-cols-2 gap-3 mb-6">
+            <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 text-center">
+                <svg class="w-6 h-6 text-blue-500 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <p class="text-xs text-gray-500">Total Check-ins</p>
+                <p class="text-xl font-bold text-gray-900">{{ total_checkins }}</p>
+            </div>
+            <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 text-center">
+                <svg class="w-6 h-6 text-green-500 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <p class="text-xs text-gray-500">Total Earned</p>
+                <p class="text-xl font-bold text-gray-900">₵{{ total_earned|floatformat:2|intcomma }}</p>
+            </div>
+        </div>
+
+        <!-- Streak Calendar (Next 7 Days Preview) -->
+        <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 mb-6">
+            <div class="flex items-center gap-2 mb-4">
+                <svg class="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>
+                <h3 class="font-semibold text-gray-900">Your Streak Calendar</h3>
+            </div>
+            
+            <div class="grid grid-cols-7 gap-2">
+                {% for day in week_days %}
+                <div class="text-center">
+                    <div class="text-xs text-gray-500 mb-1">{{ day.day_short }}</div>
+                    <div class="w-10 h-10 mx-auto rounded-full flex items-center justify-center
+                        {% if day.checked_in %}
+                            bg-green-500 text-white
+                        {% elif day.is_today %}
+                            bg-purple-500 text-white ring-2 ring-purple-300
+                        {% else %}
+                            bg-gray-100 text-gray-400
+                        {% endif %}">
+                        {% if day.checked_in %}
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                            </svg>
+                        {% else %}
+                            {{ day.day_num }}
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <div class="flex justify-center gap-4 mt-4 text-xs">
+                <div class="flex items-center gap-1">
+                    <div class="w-3 h-3 bg-green-500 rounded-full"></div>
+                    <span class="text-gray-500">Checked</span>
+                </div>
+                <div class="flex items-center gap-1">
+                    <div class="w-3 h-3 bg-purple-500 rounded-full"></div>
+                    <span class="text-gray-500">Today</span>
+                </div>
+                <div class="flex items-center gap-1">
+                    <div class="w-3 h-3 bg-gray-200 rounded-full"></div>
+                    <span class="text-gray-500">Upcoming</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Streak Rewards Guide -->
+        <div class="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-2xl p-5 border border-yellow-100">
+            <div class="flex items-center gap-2 mb-3">
+                <svg class="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                </svg>
+                <h3 class="font-semibold text-gray-900">Streak Rewards Guide</h3>
+            </div>
+            <div class="space-y-2">
+                <div class="flex justify-between text-sm">
+                    <span class="text-gray-600">Days 1-2:</span>
+                    <span class="font-medium text-green-600">₵1.00 per day</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-gray-600">Days 3-4:</span>
+                    <span class="font-medium text-green-600">₵1.50 per day</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-gray-600">Days 5-6:</span>
+                    <span class="font-medium text-green-600">₵2.00 per day</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-gray-600">Days 7-9:</span>
+                    <span class="font-medium text-green-600">₵2.50 per day</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-gray-600">Day 10+:</span>
+                    <span class="font-medium text-green-600">₵3.00 per day</span>
+                </div>
+            </div>
+            <div class="mt-3 pt-3 border-t border-yellow-200">
+                <p class="text-xs text-gray-500 text-center">
+                    💡 Don't break your streak! Check in daily to maximize your rewards.
+                </p>
+            </div>
+        </div>
+
+        <!-- Motivational Quote -->
+        <div class="mt-6 text-center">
+            <p class="text-sm text-gray-400 italic">
+                "Consistency is the key to success. Keep your streak alive!"
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- Success Modal (Shows after check-in) -->
+<div id="success-modal" class="fixed inset-0 z-50 hidden items-center justify-center px-4">
+    <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="closeSuccessModal()"></div>
+    <div class="relative bg-white rounded-2xl max-w-sm w-full p-6 text-center animate-fade-in-up">
+        <div class="w-16 h-16 mx-auto bg-green-100 rounded-full flex items-center justify-center mb-4">
+            <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+            </svg>
+        </div>
+        <h3 class="text-xl font-bold text-gray-900 mb-2">Check-in Successful!</h3>
+        <p class="text-gray-600 mb-4">You've earned</p>
+        <p class="text-3xl font-bold text-green-600 mb-4" id="modal-bonus">₵0.00</p>
+        <p class="text-sm text-gray-500 mb-4" id="modal-streak">Streak: X days</p>
+        <button onclick="closeSuccessModal()" class="w-full py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition">
+            Continue
+        </button>
+    </div>
+</div>
+
+<style>
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    @keyframes pulse {
+        0%, 100% {
+            opacity: 1;
+        }
+        50% {
+            opacity: 0.7;
+        }
+    }
+    
+    .animate-fade-in-up {
+        animation: fadeInUp 0.3s ease-out;
+    }
+    
+    .animate-pulse {
+        animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+</style>
+
+<script>
+    function checkIn() {
+        fetch('{% url "daily_checkin" %}', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Show success modal with animation
+                document.getElementById('modal-bonus').innerText = `₵${parseFloat(data.bonus).toLocaleString()}`;
+                document.getElementById('modal-streak').innerText = `Streak: ${data.streak} days`;
+                document.getElementById('success-modal').classList.remove('hidden');
+                document.getElementById('success-modal').classList.add('flex');
+                
+                // Reload page after 2 seconds to update stats
+                setTimeout(() => {
+                    location.reload();
+                }, 2000);
+            } else {
+                alert(data.message || 'Check-in failed. Please try again.');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Something went wrong. Please try again.');
+        });
+    }
+    
+    function closeSuccessModal() {
+        const modal = document.getElementById('success-modal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        location.reload();
+    }
+    
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    
+    // Close modal when clicking outside
+    document.getElementById('success-modal')?.addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeSuccessModal();
+        }
+    });
+</script>
+
+{% include "iCare/partials/footer.html" %}
+{% endblock %}

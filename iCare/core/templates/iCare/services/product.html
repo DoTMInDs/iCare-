@@ -1,22 +1,27 @@
 {% extends "iCare/base.html" %}
 {% load static %}
+{% load humanize %}
 {% block title %}Investment Products{% endblock %}
 
 {% block content %}
-<div class="min-h-screen bg-gradient-to-b from-gray-50 to-white pb-8">
-    
+<div class="min-h-screen pb-8">
     <!-- Modern Floating Header -->
-    <div class="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-100 px-5 py-3 flex items-center justify-between shadow-sm">
+    <div class="fixed top-0 left-0 right-0 max-w-lg mx-auto z-50 bg-white/80 backdrop-blur-xl border-b border-gray-100 px-5 py-3 flex items-center justify-between shadow-sm">
         <button class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 active:bg-gray-200 transition-all duration-200" onclick="window.history.back()">
             <svg class="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
             </svg>
         </button>
         <h1 class="text-lg font-bold text-gray-900">Investment Plans</h1>
-        <div class="w-10"></div>
+        <a href="{% url 'my_investments' %}" class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 active:bg-gray-200 transition-all duration-200">
+            <svg class="w-5 h-5 text-gray-700" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M6.33799 3.69998C6.26927 3.50473 6.14165 3.33562 5.97275 3.21597C5.80385 3.09633 5.60198 3.03204 5.39499 3.03198H4.61999C4.40013 3.0326 4.18823 3.1143 4.02486 3.26144C3.8615 3.40857 3.75816 3.61081 3.73462 3.8294C3.71109 4.048 3.76903 4.26759 3.89733 4.44612C4.02564 4.62466 4.2153 4.74959 4.42999 4.79698L5.60799 5.05498C5.84903 5.10759 6.06211 5.24745 6.20627 5.44766C6.35043 5.64788 6.41549 5.89432 6.38894 6.1396C6.36239 6.38488 6.24611 6.61169 6.06244 6.77642C5.87878 6.94115 5.6407 7.03217 5.39399 7.03198H4.72699C4.52024 7.03207 4.31855 6.96808 4.14967 6.84881C3.9808 6.72954 3.85304 6.56086 3.78399 6.36598M5.06199 3.03198V2.03198M5.06199 8.03198V7.03198M6.96899 13.499V8.24898C6.96899 7.91746 7.10068 7.59952 7.3351 7.3651C7.56952 7.13068 7.88747 6.99898 8.21899 6.99898C8.55051 6.99898 8.86845 7.13068 9.10287 7.3651C9.33729 7.59952 9.46899 7.91746 9.46899 8.24898V10.999H11.469C11.9994 10.999 12.5081 11.2097 12.8832 11.5848C13.2583 11.9598 13.469 12.4685 13.469 12.999V13.499" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M5.0631 9.56399C4.14047 9.56386 3.23988 9.28208 2.48171 8.75632C1.72355 8.23056 1.14396 7.48588 0.820428 6.62185C0.496898 5.75781 0.444849 4.8156 0.67124 3.92118C0.897631 3.02676 1.39167 2.22277 2.08731 1.61671C2.78295 1.01064 3.64703 0.631374 4.56403 0.529625C5.48102 0.427876 6.40723 0.60849 7.21881 1.04732C8.03039 1.48615 8.68866 2.16228 9.10562 2.98531C9.52258 3.80834 9.67834 4.73904 9.5521 5.65299" stroke="black" stroke-linecap="round"/>
+            </svg>
+        </a>
     </div>
 
-    <div class="pt-20 px-5 max-w-lg mx-auto">
+    <div class="pt-20 pb-[70px] px-5 max-w-lg mx-auto bg-slate-100">
         
         <!-- Header Banner -->
         <div class="bg-gradient-to-r from-purple-600 to-blue-600 rounded-2xl p-5 mb-6 shadow-lg shadow-purple-200">
@@ -28,7 +33,7 @@
                 </div>
                 <div class="flex-1">
                     <p class="text-white text-sm font-medium">Available Balance</p>
-                    <p class="text-white text-2xl font-bold text-nowrap">₵{{ user_balance.balance|floatformat:2 }}</p>
+                    <p class="text-white text-2xl font-bold text-nowrap">₵{{ user_balance.balance|floatformat:2|intcomma }}</p>
                 </div>
                 <a href="{% url 'recharge' %}" class="px-4 py-2 bg-white/20 rounded-xl text-white text-sm font-medium hover:bg-white/30 transition">
                     Deposit
@@ -51,7 +56,7 @@
         <div class="space-y-4" id="products-container">
             {% for product in products %}
             <div class="product-card bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-all duration-300" 
-                 data-price="₵{{ product.price|floatformat:0 }}">
+                 data-price="{{ product.price }}">
                 
                 <!-- Product Header -->
                 <div class="p-5 pb-3">
@@ -60,18 +65,17 @@
                             <h3 class="text-lg font-bold text-gray-900">{{ product.name }}</h3>
                             <div class="flex items-center gap-2 mt-1">
                                 <span class="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">
-                                    {{ product.term }}days
+                                    {{ product.term }} days
                                 </span>
                                 {% if product.daily_earnings %}
                                 <span class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
-                                   ₵ {{ product.daily_earnings|floatformat:2 }}/day
+                                   ₵ {{ product.daily_earnings|floatformat:2|intcomma }}/day
                                 </span>
                                 {% endif %}
                             </div>
                         </div>
                         <div class="text-right">
-                            <p class="text-2xl font-bold text-gray-900">₵{{ product.price|floatformat:2 }}</p>
-                            {% comment %} <p class="text-xs text-gray-500">₵</p> {% endcomment %}
+                            <p class="text-2xl font-bold text-gray-900">₵{{ product.price|floatformat:2|intcomma }}</p>
                         </div>
                     </div>
                     
@@ -86,7 +90,7 @@
                             <span class="text-gray-500">Daily Earnings:</span>
                             <span class="font-semibold text-green-600 ml-1">
                                 {% if product.daily_earnings %}
-                                    ₵ {{ product.daily_earnings }}
+                                    ₵ {{ product.daily_earnings|intcomma }}
                                 {% else %}
                                     --
                                 {% endif %}
@@ -96,7 +100,7 @@
                             <span class="text-gray-500">Total Earnings:</span>
                             <span class="font-semibold text-blue-600 ml-1">
                                 {% if product.total_earnings %}
-                                    ₵ {{ product.total_earnings }}
+                                    ₵ {{ product.total_earnings|intcomma }}
                                 {% else %}
                                     --
                                 {% endif %}
@@ -146,7 +150,7 @@
                             <p class="text-xs text-gray-500 mt-1">Purchased: {{ investment.created_at|date:"M d, Y" }}</p>
                             <div class="flex items-center gap-3 mt-2">
                                 <span class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
-                                    Earned: GHS {{ investment.total_earned|floatformat:2 }}
+                                    Earned: ₵ {{ investment.total_earned|floatformat:2|intcomma }}
                                 </span>
                                 <span class="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
                                     Status: {{ investment.get_status_display }}
@@ -154,7 +158,7 @@
                             </div>
                         </div>
                         <div class="text-right">
-                            <p class="text-sm font-bold text-gray-900">GHS {{ investment.amount|floatformat:2 }}</p>
+                            <p class="text-sm font-bold text-gray-900">₵ {{ investment.amount|floatformat:2|intcomma }}</p>
                             <p class="text-xs text-gray-500 mt-1">{{ investment.days_remaining }} days left</p>
                         </div>
                     </div>
@@ -175,11 +179,11 @@
 
 <!-- Product Details Modal -->
 <div id="details-modal" class="fixed inset-0 z-50 hidden items-center justify-center px-4">
-    <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="closeModal('details-modal')"></div>
+    <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="closeProductModal()"></div>
     <div class="relative bg-white rounded-2xl max-w-md w-full max-h-[80vh] overflow-y-auto animate-fade-in-up">
         <div class="sticky top-0 bg-white border-b border-gray-100 px-5 py-4 flex justify-between items-center">
             <h3 class="text-lg font-bold text-gray-900">Product Details</h3>
-            <button onclick="closeModal('details-modal')" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
+            <button onclick="closeProductModal()" class="close-modal-btn w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition">
                 <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                 </svg>
@@ -193,60 +197,143 @@
 
 <!-- Purchase Modal -->
 <div id="purchase-modal" class="fixed inset-0 z-50 hidden items-center justify-center px-4">
-    <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="closeModal('purchase-modal')"></div>
-    <div class="relative bg-white rounded-2xl max-w-md w-full animate-fade-in-up">
-        <div class="border-b border-gray-100 px-5 py-4">
+    <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="closePurchaseModal()"></div>
+    <div class="relative bg-white rounded-2xl max-w-md w-full max-h-[80vh] flex flex-col animate-fade-in-up">
+        
+        <!-- Fixed Header -->
+        <div class="flex-shrink-0 border-b border-gray-100 px-5 py-4 flex justify-between items-center">
             <h3 class="text-lg font-bold text-gray-900">Purchase Investment</h3>
+            <button onclick="closePurchaseModal()" class="close-modal-btn w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition">
+                <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
         </div>
-        <form id="purchase-form" method="post" action="{% url 'purchase_product' %}" class="p-5 space-y-4">
+        
+        <!-- Scrollable Content -->
+        <form id="purchase-form" method="post" action="{% url 'purchase_product' %}" class="flex-1 overflow-y-auto">
             {% csrf_token %}
             <input type="hidden" name="product_id" id="purchase-product-id">
+            <input type="hidden" name="payment_method_id" id="payment-method-id">
+            <input type="hidden" name="payment_method_type" id="payment-method-type">
             
-            <div class="bg-blue-50 rounded-xl p-4">
-                <p class="text-sm text-gray-700 mb-2">Selected Plan:</p>
-                <p class="font-semibold text-gray-900" id="purchase-product-name"></p>
-                <div class="flex justify-between mt-3 pt-3 border-t border-blue-100">
-                    <span class="text-sm text-gray-600">Price:</span>
-                    <span class="font-bold text-blue-600" id="purchase-product-price"></span>
+            <div class="p-5 space-y-4">
+                <div class="bg-blue-50 rounded-xl p-4">
+                    <p class="text-sm text-gray-700 mb-2">Selected Plan:</p>
+                    <p class="font-semibold text-gray-900" id="purchase-product-name"></p>
+                    <div class="flex justify-between mt-3 pt-3 border-t border-blue-100">
+                        <span class="text-sm text-gray-600">Price:</span>
+                        <span class="font-bold text-blue-600" id="purchase-product-price"></span>
+                    </div>
+                </div>
+                
+                <!-- Payment Method Selection -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-3">Select Payment Method</label>
+                    
+                    <!-- Wallet Option -->
+                    <div class="mb-3">
+                        <button type="button" onclick="selectPaymentMethod('wallet', 'wallet', '{{ user_balance.balance }}')" 
+                            class="payment-option w-full p-3 rounded-xl text-left transition-all duration-200 border-2 
+                            border-gray-200 bg-white hover:border-blue-300">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center flex-shrink-0">
+                                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <p class="font-semibold text-gray-900 text-sm">Wallet Balance</p>
+                                        <p class="text-xs text-gray-500">Available: ₵{{ user_balance.balance|floatformat:2|intcomma }}</p>
+                                    </div>
+                                </div>
+                                <div id="wallet-radio" class="w-5 h-5 rounded-full border-2 border-gray-300 flex-shrink-0"></div>
+                            </div>
+                        </button>
+                    </div>
+                    
+                    <!-- Saved Payment Methods -->
+                    {% if saved_accounts %}
+                        <div class="space-y-2">
+                            <p class="text-xs text-gray-500 uppercase tracking-wide mb-2">Saved Payment Methods</p>
+                            {% for account in saved_accounts %}
+                            <button type="button" onclick="selectPaymentMethod('{{ account.id }}', '{{ account.account_type }}', '{{ account.id }}')" 
+                                class="payment-option w-full p-3 rounded-xl text-left transition-all duration-200 border-2 
+                                border-gray-200 bg-white hover:border-blue-300">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center gap-3">
+                                        {% if account.account_type == 'mobile_money' %}
+                                            <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+                                                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                                                </svg>
+                                            </div>
+                                            <div>
+                                                <p class="font-semibold text-gray-900 text-sm">{{ account.get_network_display }}</p>
+                                                <p class="text-xs text-gray-500">{{ account.phone_number }}</p>
+                                            </div>
+                                        {% else %}
+                                            <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center flex-shrink-0">
+                                                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                                                </svg>
+                                            </div>
+                                            <div>
+                                                <p class="font-semibold text-gray-900 text-sm">{{ account.bank_name }}</p>
+                                                <p class="text-xs text-gray-500">{{ account.account_number|slice:"-4" }}</p>
+                                            </div>
+                                        {% endif %}
+                                        {% if account.is_default %}
+                                            <span class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Default</span>
+                                        {% endif %}
+                                    </div>
+                                    <div id="radio-{{ account.id }}" class="w-5 h-5 rounded-full border-2 border-gray-300 flex-shrink-0"></div>
+                                </div>
+                            </button>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    
+                    <!-- Add New Payment Method Link -->
+                    <div class="mt-3 text-center">
+                        <a href="{% url 'saved_payment_methods' %}" class="text-xs text-blue-600 font-medium hover:text-blue-700 inline-flex items-center gap-1">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                            </svg>
+                            Add New Payment Method
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Wallet Warning -->
+                <div id="wallet-warning" class="hidden bg-yellow-50 border-l-4 border-yellow-500 rounded-lg p-2 text-xs text-yellow-800">
+                    <div class="flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                        </svg>
+                        <span>Insufficient balance. Please recharge your wallet or select another payment method.</span>
+                    </div>
                 </div>
             </div>
             
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Payment Method</label>
-                <select name="payment_method" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-blue-400">
-                    <option value="wallet">Wallet Balance</option>
-                    <option value="card">Card Payment</option>
-                    <option value="mobile_money">Mobile Money</option>
-                </select>
-            </div>
-            
-            <div id="wallet-info" class="bg-gray-50 rounded-xl p-3 text-sm">
-                <div class="flex justify-between">
-                    <span class="text-gray-600">Available Balance:</span>
-                    <span class="font-semibold text-gray-900">₵ {{ user_balance.balance|floatformat:2 }}</span>
+            <!-- Fixed Footer Buttons with extra bottom padding -->
+            <div class="flex-shrink-0 border-t border-gray-100 bg-white">
+                <div class="p-5 pb-8">
+                    <div class="flex gap-3">
+                        <button type="button" onclick="closePurchaseModal()" class="flex-1 py-2.5 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition text-sm">
+                            Cancel
+                        </button>
+                        <button type="submit" class="flex-1 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-medium hover:from-blue-700 hover:to-blue-800 transition shadow-md text-sm">
+                            Confirm Purchase
+                        </button>
+                    </div>
                 </div>
-            </div>
-            
-            <div id="payment-warning" class="hidden bg-yellow-50 border-l-4 border-yellow-500 rounded-lg p-3 text-sm text-yellow-800">
-                <div class="flex items-center gap-2">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-                    </svg>
-                    <span>Insufficient balance. Please recharge your wallet.</span>
-                </div>
-            </div>
-            
-            <div class="flex gap-3 pt-2">
-                <button type="button" onclick="closeModal('purchase-modal')" class="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition">
-                    Cancel
-                </button>
-                <button type="submit" class="flex-1 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-medium hover:from-blue-700 hover:to-blue-800 transition shadow-md">
-                    Confirm Purchase
-                </button>
             </div>
         </form>
     </div>
 </div>
+
 
 <style>
     @keyframes fadeInUp {
@@ -260,8 +347,17 @@
         }
     }
     
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+    
     .animate-fade-in-up {
         animation: fadeInUp 0.3s ease-out;
+    }
+    
+    .animate-spin {
+        animation: spin 1s linear infinite;
     }
     
     .product-card {
@@ -271,10 +367,34 @@
     .product-card:active {
         transform: scale(0.98);
     }
+    
+    .payment-option.selected {
+        border-color: #3b82f6;
+        background-color: #eff6ff;
+    }
+    
+    .payment-option.selected .w-5.h-5 {
+        background-color: #3b82f6;
+        border-color: #3b82f6;
+        position: relative;
+    }
+    
+    .payment-option.selected .w-5.h-5::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 8px;
+        height: 8px;
+        background-color: white;
+        border-radius: 50%;
+    }
 </style>
 
 <script>
-    let productsData = {};
+    let selectedPaymentMethodId = null;
+    let selectedPaymentMethodType = null;
     
     document.addEventListener('DOMContentLoaded', function() {
         // Load products data from backend
@@ -319,6 +439,52 @@
         cards.forEach(card => container.appendChild(card));
     }
     
+    function closeProductModal() {
+        const modal = document.getElementById('details-modal');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+    }
+    
+    function closePurchaseModal() {
+        const modal = document.getElementById('purchase-modal');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+    }
+    
+    function selectPaymentMethod(methodId, methodType, methodValue) {
+        // Remove selected class from all payment options
+        document.querySelectorAll('.payment-option').forEach(option => {
+            option.classList.remove('selected');
+        });
+        
+        // Add selected class to clicked option
+        const clickedOption = document.querySelector(`button[onclick="selectPaymentMethod('${methodId}', '${methodType}', '${methodValue}')"]`);
+        if (clickedOption) {
+            clickedOption.classList.add('selected');
+        }
+        
+        // Update hidden inputs
+        selectedPaymentMethodId = methodId;
+        selectedPaymentMethodType = methodType;
+        document.getElementById('payment-method-id').value = methodId;
+        document.getElementById('payment-method-type').value = methodType;
+        
+        // Show/hide wallet warning
+        const productPrice = parseFloat(document.getElementById('purchase-product-price').innerText.replace(/[^0-9.-]/g, ''));
+        const balance = {{ user_balance.balance|default:0 }};
+        const walletWarning = document.getElementById('wallet-warning');
+        
+        if (methodType === 'wallet' && productPrice > balance) {
+            walletWarning.classList.remove('hidden');
+        } else {
+            walletWarning.classList.add('hidden');
+        }
+    }
+    
     function showProductDetails(productId) {
         const modal = document.getElementById('details-modal');
         const content = document.getElementById('details-content');
@@ -330,7 +496,7 @@
                     <div class="space-y-4">
                         <div class="bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl p-4">
                             <h4 class="font-bold text-lg text-gray-900">${product.name}</h4>
-                            <p class="text-2xl font-bold text-blue-600 mt-2">₵ ${product.price}</p>
+                            <p class="text-2xl font-bold text-blue-600 mt-2">₵ ${parseFloat(product.price).toLocaleString()}</p>
                         </div>
                         
                         <div>
@@ -341,19 +507,19 @@
                         <div class="grid grid-cols-2 gap-3">
                             <div class="bg-gray-50 rounded-xl p-3 text-center">
                                 <p class="text-xs text-gray-500">Term</p>
-                                <p class="font-semibold text-gray-900">${product.term}days</p>
+                                <p class="font-semibold text-gray-900">${product.term} days</p>
                             </div>
                             <div class="bg-gray-50 rounded-xl p-3 text-center">
                                 <p class="text-xs text-gray-500">Daily Earnings</p>
-                                <p class="font-semibold text-green-600">GHS ${product.daily_earnings || '--'}</p>
+                                <p class="font-semibold text-green-600">₵ ${product.daily_earnings ? parseFloat(product.daily_earnings).toLocaleString() : '--'}</p>
                             </div>
                             <div class="bg-gray-50 rounded-xl p-3 text-center col-span-2">
                                 <p class="text-xs text-gray-500">Total Expected Return</p>
-                                <p class="font-semibold text-blue-600">GHS ${product.total_earnings || '--'}</p>
+                                <p class="font-semibold text-blue-600">₵ ${product.total_earnings ? parseFloat(product.total_earnings).toLocaleString() : '--'}</p>
                             </div>
                         </div>
                         
-                        <button onclick="closeModal('details-modal'); showPurchaseModal('${product.id}', '${product.name}', ${product.price})" 
+                        <button onclick="closeProductModal(); showPurchaseModal('${product.id}', '${product.name}', ${product.price})" 
                                 class="w-full py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-medium hover:from-blue-700 hover:to-blue-800 transition shadow-md">
                             Purchase Now
                         </button>
@@ -364,45 +530,129 @@
             })
             .catch(error => console.error('Error:', error));
     }
+
     
+    // Show purchase modal with product details
     function showPurchaseModal(productId, productName, productPrice) {
         const modal = document.getElementById('purchase-modal');
-        const balance = {{ user_balance.balance|default:0 }};
         
         document.getElementById('purchase-product-id').value = productId;
         document.getElementById('purchase-product-name').innerText = productName;
-        document.getElementById('purchase-product-price').innerHTML = `GHS ${productPrice.toFixed(2)}`;
+        document.getElementById('purchase-product-price').innerHTML = `₵ ${parseFloat(productPrice).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
         
-        const walletInfo = document.getElementById('wallet-info');
-        const paymentWarning = document.getElementById('payment-warning');
+        // Reset selected payment method
+        selectedPaymentMethodId = null;
+        selectedPaymentMethodType = null;
         
-        if (productPrice > balance) {
-            paymentWarning.classList.remove('hidden');
-        } else {
-            paymentWarning.classList.add('hidden');
-        }
+        // Reset hidden inputs
+        const paymentMethodIdInput = document.getElementById('payment-method-id');
+        const paymentMethodTypeInput = document.getElementById('payment-method-type');
+        if (paymentMethodIdInput) paymentMethodIdInput.value = '';
+        if (paymentMethodTypeInput) paymentMethodTypeInput.value = '';
+        
+        // Remove selected class from all payment options
+        document.querySelectorAll('.payment-option').forEach(option => {
+            option.classList.remove('selected');
+        });
+        
+        // Hide wallet warning
+        const walletWarning = document.getElementById('wallet-warning');
+        if (walletWarning) walletWarning.classList.add('hidden');
         
         modal.classList.remove('hidden');
         modal.classList.add('flex');
     }
-    
-    function closeModal(modalId) {
-        const modal = document.getElementById(modalId);
-        modal.classList.add('hidden');
-        modal.classList.remove('flex');
-    }
+
     
     // Handle purchase form submission
-    document.getElementById('purchase-form')?.addEventListener('submit', function(e) {
-        const productPrice = parseFloat(document.getElementById('purchase-product-price').innerText.replace('GHS ', ''));
-        const balance = {{ user_balance.balance|default:0 }};
-        const paymentMethod = document.querySelector('select[name="payment_method"]').value;
+    const purchaseForm = document.getElementById('purchase-form');
+    if (purchaseForm) {
+        purchaseForm.addEventListener('submit', function(e) {
+            console.log("Form submission triggered");
+            
+            const productPriceText = document.getElementById('purchase-product-price').innerText;
+            const productPrice = parseFloat(productPriceText.replace(/[^0-9.-]/g, ''));
+            const balance = {{ user_balance.balance|default:0 }};
+            
+            console.log("Product price:", productPrice);
+            console.log("Balance:", balance);
+            console.log("Selected payment method ID:", selectedPaymentMethodId);
+            console.log("Selected payment method type:", selectedPaymentMethodType);
+            
+            // Check if payment method is selected
+            if (!selectedPaymentMethodId || !selectedPaymentMethodType) {
+                e.preventDefault();
+                alert('Please select a payment method.');
+                return false;
+            }
+            
+            // For wallet payments, check balance
+            if (selectedPaymentMethodType === 'wallet') {
+                if (productPrice > balance) {
+                    e.preventDefault();
+                    alert('Insufficient balance. Please recharge your wallet or select another payment method.');
+                    return false;
+                }
+            }
+            
+            // Show loading indicator
+            const submitBtn = purchaseForm.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = `
+                    <svg class="animate-spin h-5 w-5 mx-auto" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                `;
+            }
+            
+            console.log("Form submission allowed, submitting...");
+            return true;
+        });
+    }
+
+    // Also ensure the selectPaymentMethod function is working
+    function selectPaymentMethod(methodId, methodType, methodValue) {
+        console.log("Selecting payment method:", methodId, methodType, methodValue);
         
-        if (paymentMethod === 'wallet' && productPrice > balance) {
-            e.preventDefault();
-            alert('Insufficient balance. Please recharge your wallet or select another payment method.');
+        // Remove selected class from all payment options
+        document.querySelectorAll('.payment-option').forEach(option => {
+            option.classList.remove('selected');
+        });
+        
+        // Add selected class to clicked option
+        const clickedOption = document.querySelector(`button[onclick="selectPaymentMethod('${methodId}', '${methodType}', '${methodValue}')"]`);
+        if (clickedOption) {
+            clickedOption.classList.add('selected');
         }
-    });
+        
+        // Update global variables
+        selectedPaymentMethodId = methodId;
+        selectedPaymentMethodType = methodType;
+        
+        // Update hidden inputs
+        const paymentMethodIdInput = document.getElementById('payment-method-id');
+        const paymentMethodTypeInput = document.getElementById('payment-method-type');
+        
+        if (paymentMethodIdInput) paymentMethodIdInput.value = methodId;
+        if (paymentMethodTypeInput) paymentMethodTypeInput.value = methodType;
+        
+        console.log("Updated hidden inputs - ID:", methodId, "Type:", methodType);
+        
+        // Show/hide wallet warning
+        const productPriceText = document.getElementById('purchase-product-price').innerText;
+        const productPrice = parseFloat(productPriceText.replace(/[^0-9.-]/g, ''));
+        const balance = {{ user_balance.balance|default:0 }};
+        const walletWarning = document.getElementById('wallet-warning');
+        
+        if (methodType === 'wallet' && productPrice > balance) {
+            if (walletWarning) walletWarning.classList.remove('hidden');
+        } else {
+            if (walletWarning) walletWarning.classList.add('hidden');
+        }
+    }
 </script>
+
 {% include "iCare/partials/footer.html" %}
 {% endblock %}

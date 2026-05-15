@@ -1,35 +1,13 @@
 {% extends "iCare/base.html" %}
 {% load static %}
+{% load humanize %}
 {% block title %}Recharge Records{% endblock %}
 
 {% block content %}
-<!-- Success Message -->
-{% if success_message or request.GET.payment_success %}
-    <div class="mb-4 bg-green-50 border-l-4 border-green-500 rounded-xl p-4 shadow-sm animate-fade-in">
-        <div class="flex items-center gap-3">
-            <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                </svg>
-            </div>
-            <div>
-                <p class="font-semibold text-green-800">Payment Successful!</p>
-                <p class="text-sm text-green-700">
-                    {% if request.GET.amount %}
-                        You have successfully added GHS {{ request.GET.amount }} to your wallet.
-                    {% else %}
-                        Your wallet has been credited successfully.
-                    {% endif %}
-                </p>
-            </div>
-        </div>
-    </div>
-{% endif %}
 
-<div class="min-h-screen bg-gradient-to-b from-gray-50 to-white pb-8">
-    
+<div class="min-h-screen pb-8">    
     <!-- Modern Floating Header -->
-    <div class="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-100 px-5 py-3 flex items-center justify-between shadow-sm">
+    <div class="fixed top-0 left-0 right-0 z-50 max-w-lg mx-auto bg-white/80 backdrop-blur-xl border-b border-gray-100 px-5 py-3 flex items-center justify-between shadow-sm">
         <button class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 active:bg-gray-200 transition-all duration-200" onclick="window.history.back()">
             <svg class="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
@@ -39,7 +17,23 @@
         <div class="w-10"></div>
     </div>
 
-    <div class="pt-20 px-5 max-w-lg mx-auto">
+    <div class="pt-20 pb-[70px] px-5 max-w-lg mx-auto bg-slate-100">
+
+        <!-- Success/Error Messages -->
+        {% if messages %}
+            {% for message in messages %}
+            <div class="mb-4 flex items-center gap-3 {% if message.tags == 'success' %}bg-green-50 border-l-4 border-green-500{% else %}bg-red-50 border-l-4 border-red-500{% endif %} rounded-xl p-4 text-sm shadow-sm animate-fade-in">
+                <svg class="w-5 h-5 {% if message.tags == 'success' %}text-green-500{% else %}text-red-500{% endif %} flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    {% if message.tags == 'success' %}
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    {% else %}
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    {% endif %}
+                </svg>
+                <span class="{% if message.tags == 'success' %}text-green-800{% else %}text-red-800{% endif %}">{{ message }}</span>
+            </div>
+            {% endfor %}
+        {% endif %}
         
         <!-- Stats Summary Card -->
         {% if transactions %}
@@ -48,7 +42,7 @@
                 <div>
                     <p class="text-blue-100 text-xs font-medium uppercase tracking-wide">Total Recharged</p>
                     <p class="text-white text-2xl font-bold mt-1">
-                        GHS {{ total_amount|floatformat:2|default:"0.00" }}
+                        GHS {{ total_amount|floatformat:2|default:"0.00"|intcomma }}
                     </p>
                 </div>
                 <div class="text-right">
@@ -137,7 +131,7 @@
                     <!-- Right side: amount + status -->
                     <div class="text-right flex-shrink-1">
                         <p class="text-base font-bold {% if transaction.status == 'success' %}text-green-600{% else %}text-gray-900{% endif %}">
-                            ₵ {{ transaction.amount|floatformat:2 }}
+                            ₵ {{ transaction.amount|floatformat:2|intcomma }}
                         </p>
                         <p class="text-xs font-medium mt-1.5 px-2 py-0.5 rounded-full inline-block
                             {% if transaction.status == 'success' %}bg-green-100 text-green-700
@@ -314,5 +308,15 @@
             });
         });
     });
+
+    // message auto hide after 5 seconds
+    setTimeout(() => {
+        document.querySelectorAll('.animate-fade-in').forEach(el => {
+            el.classList.add('opacity-0', 'transition-opacity', 'duration-500');
+            setTimeout(() => el.remove(), 500);
+        });
+    }, 5000);
 </script>
+
+{% include "iCare/partials/footer.html" %}
 {% endblock %}

@@ -1,12 +1,13 @@
 {% extends "iCare/base.html" %}
 {% load static %}
+{% load humanize %}
 {% block title %}Withdraw Funds{% endblock %}
 
 {% block content %}
-<div class="min-h-screen bg-gradient-to-b from-gray-50 to-white pb-8">
+<div class="min-h-screen pb-8">
     
     <!-- Modern Floating Header -->
-    <div class="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-100 px-5 py-3 flex items-center justify-between shadow-sm">
+    <div class="fixed top-0 left-0 right-0 z-50 max-w-lg mx-auto bg-white/80 backdrop-blur-xl border-b border-gray-100 px-5 py-3 flex items-center justify-between shadow-sm">
         <button class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 active:bg-gray-200 transition-all duration-200" onclick="window.history.back()">
             <svg class="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
@@ -20,14 +21,31 @@
         </a>
     </div>
 
-    <div class="pt-20 px-5 max-w-lg mx-auto">
+    <div class="pt-20 pb-[70px] px-5 max-w-lg mx-auto bg-slate-100">
+        
+        <!-- Alert Messages -->
+        {% if messages %}
+            {% for message in messages %}
+            <div class="mb-4 flex items-center gap-3 {% if message.tags == 'success' %}bg-green-50 border-l-4 border-green-500{% else %}bg-red-50 border-l-4 border-red-500{% endif %} rounded-xl p-4 text-sm shadow-sm animate-fade-in">
+                <svg class="w-5 h-5 {% if message.tags == 'success' %}text-green-500{% else %}text-red-500{% endif %} flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    {% if message.tags == 'success' %}
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    {% else %}
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    {% endif %}
+                </svg>
+                <span class="{% if message.tags == 'success' %}text-green-800{% else %}text-red-800{% endif %}">{{ message }}</span>
+            </div>
+            {% endfor %}
+        {% endif %}
+
         <!-- Balance Card -->
         <div class="mb-6 bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl p-6 shadow-xl shadow-blue-200">
             <div class="flex justify-between items-start">
                 <div>
                     <p class="text-blue-100 text-xs font-medium uppercase tracking-wide">Available Balance</p>
                     <p class="text-white text-3xl font-bold mt-2">
-                        {{ user_balance.currency }} {{ user_balance.balance|floatformat:2 }}
+                        ₵{{ user_balance.balance|floatformat:2|intcomma }}
                     </p>
                 </div>
                 <div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
@@ -38,7 +56,7 @@
             </div>
             <div class="mt-4 pt-3 border-t border-blue-500/50">
                 <div class="flex justify-between text-xs text-blue-100">
-                    <span>💰 Minimum withdrawal: GHS 100</span>
+                    <span>💰 Minimum withdrawal: ₵100</span>
                     <span>⚡ Instant processing</span>
                 </div>
             </div>
@@ -47,6 +65,9 @@
         <!-- Withdrawal Form -->
         <form method="post" class="space-y-6">
             {% csrf_token %}
+            
+            <!-- Hidden input to store selected saved account -->
+            <input type="hidden" name="saved_account_id" id="saved-account-id" value="">
             
             <!-- Amount Input -->
             <div class="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
@@ -67,119 +88,86 @@
                 </div>
                 <div class="flex justify-between mt-3">
                     <div class="flex gap-2">
-                        <button type="button" data-amount="100" class="quick-amount px-3 py-1.5 text-xs bg-gray-100 rounded-lg text-gray-700 hover:bg-gray-200 transition">GHS 100</button>
-                        <button type="button" data-amount="250" class="quick-amount px-3 py-1.5 text-xs bg-gray-100 rounded-lg text-gray-700 hover:bg-gray-200 transition">GHS 250</button>
-                        <button type="button" data-amount="500" class="quick-amount px-3 py-1.5 text-xs bg-gray-100 rounded-lg text-gray-700 hover:bg-gray-200 transition">GHS 500</button>
+                        <button type="button" data-amount="100" class="quick-amount px-3 py-1.5 text-xs bg-gray-100 rounded-lg text-gray-700 hover:bg-gray-200 transition">₵100</button>
+                        <button type="button" data-amount="250" class="quick-amount px-3 py-1.5 text-xs bg-gray-100 rounded-lg text-gray-700 hover:bg-gray-200 transition">₵250</button>
+                        <button type="button" data-amount="500" class="quick-amount px-3 py-1.5 text-xs bg-gray-100 rounded-lg text-gray-700 hover:bg-gray-200 transition">₵500</button>
                     </div>
                     <button type="button" id="max-withdraw" class="text-xs text-blue-600 font-medium hover:text-blue-700">
                         Max
                     </button>
                 </div>
                 <p class="text-xs text-gray-400 mt-3">
-                    <span id="amount-error" class="text-red-500 hidden">Amount must be between GHS 100 and your available balance</span>
+                    <span id="amount-error" class="text-red-500 hidden">Amount must be between ₵100 and your available balance</span>
                 </p>
             </div>
 
-            <!-- Withdrawal Method Selection -->
+            <!-- Saved Payment Methods Section -->
             <div class="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
-                <label class="block text-sm font-semibold text-gray-700 mb-3">Withdrawal Method</label>
-                <div class="space-y-3">
-                    <!-- Mobile Money Option -->
-                    <label class="method-option flex items-center justify-between p-4 rounded-xl border-2 cursor-pointer transition-all duration-200
-                        {% if selected_method == 'mobile_money' %}border-blue-500 bg-blue-50/50{% else %}border-gray-200 hover:border-gray-300{% endif %}">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center">
-                                <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
-                                </svg>
-                            </div>
-                            <div>
-                                <p class="font-semibold text-gray-900">Mobile Money</p>
-                                <p class="text-xs text-gray-500">MTN, Vodafone, AirtelTigo</p>
+                <div class="flex items-center justify-between mb-3">
+                    <label class="text-sm font-semibold text-gray-700">Select Withdrawal Method</label>
+                    <a href="{% url 'saved_payment_methods' %}" class="text-xs text-blue-600 font-medium flex items-center gap-1">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        </svg>
+                        Add New
+                    </a>
+                </div>
+                
+                <div class="space-y-3" id="saved-accounts-container">
+                    {% if saved_accounts %}
+                        {% for account in saved_accounts %}
+                        <div onclick="selectSavedAccount('{{ account.id }}', '{{ account.account_type }}')" 
+                             class="saved-account-option p-4 rounded-xl border-2 cursor-pointer transition-all duration-200
+                                {% if account.is_default %}border-blue-500 bg-blue-50/50{% else %}border-gray-200 hover:border-gray-300{% endif %}"
+                             data-account-id="{{ account.id }}">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    {% if account.account_type == 'mobile_money' %}
+                                        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center">
+                                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <p class="font-semibold text-gray-900">{{ account.get_network_display }}</p>
+                                            <p class="text-xs text-gray-500">Mobile Money • {{ account.phone_number }}</p>
+                                        </div>
+                                    {% else %}
+                                        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center">
+                                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <p class="font-semibold text-gray-900">{{ account.bank_name }}</p>
+                                            <p class="text-xs text-gray-500">Bank Transfer • {{ account.account_number|slice:"-4" }}</p>
+                                        </div>
+                                    {% endif %}
+                                    {% if account.is_default %}
+                                        <span class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Default</span>
+                                    {% endif %}
+                                </div>
+                                <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center
+                                    {% if account.is_default %}border-blue-500 bg-blue-500{% else %}border-gray-300{% endif %}">
+                                    {% if account.is_default %}
+                                    <svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/>
+                                    </svg>
+                                    {% endif %}
+                                </div>
                             </div>
                         </div>
-                        <input type="radio" name="withdrawal_method" value="mobile_money" class="w-5 h-5 text-blue-600" 
-                            {% if selected_method == 'mobile_money' or not selected_method %}checked{% endif %}>
-                    </label>
-
-                    <!-- Bank Transfer Option -->
-                    <label class="method-option flex items-center justify-between p-4 rounded-xl border-2 cursor-pointer transition-all duration-200
-                        {% if selected_method == 'bank_transfer' %}border-blue-500 bg-blue-50/50{% else %}border-gray-200 hover:border-gray-300{% endif %}">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center">
-                                <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
-                                </svg>
-                            </div>
-                            <div>
-                                <p class="font-semibold text-gray-900">Bank Transfer</p>
-                                <p class="text-xs text-gray-500">All Ghanaian banks</p>
-                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-6">
+                            <svg class="w-12 h-12 mx-auto text-gray-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                            </svg>
+                            <p class="text-sm text-gray-500">No saved payment methods</p>
+                            <p class="text-xs text-gray-400 mt-1">Add a mobile money or bank account</p>
+                            <a href="{% url 'saved_payment_methods' %}" class="inline-block mt-3 text-sm text-blue-600 font-medium">Add Payment Method</a>
                         </div>
-                        <input type="radio" name="withdrawal_method" value="bank_transfer" class="w-5 h-5 text-blue-600"
-                            {% if selected_method == 'bank_transfer' %}checked{% endif %}>
-                    </label>
-                </div>
-            </div>
-
-            <!-- Mobile Money Details (conditional) -->
-            <div id="mobile-money-details" class="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm space-y-4 
-                {% if selected_method == 'bank_transfer' %}hidden{% endif %}">
-                <h3 class="text-sm font-semibold text-gray-700">Mobile Money Information</h3>
-                
-                <div>
-                    <label class="block text-xs font-medium text-gray-600 mb-2">Network Provider</label>
-                    <select name="network" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100">
-                        <option value="">Select network</option>
-                        <option value="mtn" {% if network == 'mtn' %}selected{% endif %}>MTN Mobile Money</option>
-                        <option value="vodafone" {% if network == 'vodafone' %}selected{% endif %}>Vodafone Cash</option>
-                        <option value="airteltigo" {% if network == 'airteltigo' %}selected{% endif %}>AirtelTigo Money</option>
-                    </select>
-                </div>
-
-                <div>
-                    <label class="block text-xs font-medium text-gray-600 mb-2">Phone Number</label>
-                    <div class="flex items-center gap-2 bg-gray-50 rounded-xl px-4 py-3 border border-gray-200 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100">
-                        <span class="text-gray-500">+233</span>
-                        <input type="tel" name="phone_number" placeholder="XX XXX XXXX" value="{{ phone_number|default:'' }}"
-                            class="w-full bg-transparent outline-none text-gray-900 placeholder-gray-400">
-                    </div>
-                    <p class="text-xs text-gray-400 mt-1">Enter phone number without country code</p>
-                </div>
-            </div>
-
-            <!-- Bank Transfer Details (conditional) -->
-            <div id="bank-transfer-details" class="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm space-y-4 
-                {% if selected_method != 'bank_transfer' %}hidden{% endif %}">
-                <h3 class="text-sm font-semibold text-gray-700">Bank Account Information</h3>
-                
-                <div>
-                    <label class="block text-xs font-medium text-gray-600 mb-2">Bank Name</label>
-                    <select name="bank_name" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100">
-                        <option value="">Select bank</option>
-                        <option value="Ghana Commercial Bank" {% if bank_name == 'Ghana Commercial Bank' %}selected{% endif %}>Ghana Commercial Bank</option>
-                        <option value="Ecobank" {% if bank_name == 'Ecobank' %}selected{% endif %}>Ecobank</option>
-                        <option value="Access Bank" {% if bank_name == 'Access Bank' %}selected{% endif %}>Access Bank</option>
-                        <option value="Stanbic Bank" {% if bank_name == 'Stanbic Bank' %}selected{% endif %}>Stanbic Bank</option>
-                        <option value="Standard Chartered" {% if bank_name == 'Standard Chartered' %}selected{% endif %}>Standard Chartered</option>
-                        <option value="Absa Bank" {% if bank_name == 'Absa Bank' %}selected{% endif %}>Absa Bank</option>
-                        <option value="Fidelity Bank" {% if bank_name == 'Fidelity Bank' %}selected{% endif %}>Fidelity Bank</option>
-                        <option value="First National Bank" {% if bank_name == 'First National Bank' %}selected{% endif %}>First National Bank</option>
-                        <option value="Universal Merchant Bank" {% if bank_name == 'Universal Merchant Bank' %}selected{% endif %}>Universal Merchant Bank</option>
-                        <option value="Prudential Bank" {% if bank_name == 'Prudential Bank' %}selected{% endif %}>Prudential Bank</option>
-                    </select>
-                </div>
-
-                <div>
-                    <label class="block text-xs font-medium text-gray-600 mb-2">Account Number</label>
-                    <input type="text" name="account_number" placeholder="Enter account number" value="{{ account_number|default:'' }}"
-                        class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100">
-                </div>
-
-                <div>
-                    <label class="block text-xs font-medium text-gray-600 mb-2">Account Holder Name</label>
-                    <input type="text" name="account_name" placeholder="Full name on account" value="{{ account_name|default:'' }}"
-                        class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100">
+                    {% endif %}
                 </div>
             </div>
 
@@ -196,10 +184,10 @@
                     </svg>
                     <div class="text-xs text-gray-600 space-y-2">
                         <p class="font-semibold text-gray-800 text-sm">📋 Withdrawal Guidelines</p>
-                        <p>• Minimum withdrawal amount is <strong>GHS 100</strong></p>
+                        <p>• Minimum withdrawal amount is <strong>₵100</strong></p>
                         <p>• Processing takes 5-30 minutes for mobile money</p>
                         <p>• Bank transfers may take 1-2 business hours</p>
-                        <p>• Withdrawals are processed to the provided account only</p>
+                        <p>• Withdrawals are processed to the selected account only</p>
                         <p>• Ensure all details are correct before submitting</p>
                     </div>
                 </div>
@@ -223,25 +211,21 @@
         animation: fadeIn 0.5s ease-out;
     }
     
-    .method-option {
-        transition: all 0.2s ease;
-    }
-    
-    .method-option:has(input:checked) {
+    .saved-account-option.selected {
         border-color: #3b82f6;
         background-color: #eff6ff;
     }
 </style>
 
 <script>
+    let selectedAccountId = null;
+    let selectedAccountType = null;
+
     document.addEventListener('DOMContentLoaded', function() {
         const balance = {{ user_balance.balance|default:0 }};
         const amountInput = document.getElementById('amount');
         const maxBtn = document.getElementById('max-withdraw');
         const quickAmountBtns = document.querySelectorAll('.quick-amount');
-        const methodRadios = document.querySelectorAll('input[name="withdrawal_method"]');
-        const mobileDetails = document.getElementById('mobile-money-details');
-        const bankDetails = document.getElementById('bank-transfer-details');
         const amountError = document.getElementById('amount-error');
         const withdrawForm = document.querySelector('form');
 
@@ -267,7 +251,7 @@
         function validateAmount(amount) {
             if (amount < 100) {
                 amountError.classList.remove('hidden');
-                amountError.textContent = 'Minimum withdrawal amount is GHS 100';
+                amountError.textContent = 'Minimum withdrawal amount is ₵100';
                 return false;
             } else if (amount > balance) {
                 amountError.classList.remove('hidden');
@@ -284,19 +268,6 @@
             validateAmount(amount);
         });
 
-        // Toggle withdrawal method details
-        methodRadios.forEach(radio => {
-            radio.addEventListener('change', function() {
-                if (this.value === 'mobile_money') {
-                    mobileDetails.classList.remove('hidden');
-                    bankDetails.classList.add('hidden');
-                } else if (this.value === 'bank_transfer') {
-                    mobileDetails.classList.add('hidden');
-                    bankDetails.classList.remove('hidden');
-                }
-            });
-        });
-
         // Form validation before submit
         withdrawForm.addEventListener('submit', function(e) {
             const amount = parseFloat(amountInput.value) || 0;
@@ -307,44 +278,73 @@
                 return;
             }
 
-            const selectedMethod = document.querySelector('input[name="withdrawal_method"]:checked').value;
-            
-            if (selectedMethod === 'mobile_money') {
-                const network = document.querySelector('select[name="network"]').value;
-                const phone = document.querySelector('input[name="phone_number"]').value;
-                
-                if (!network) {
-                    e.preventDefault();
-                    alert('Please select your mobile money network');
-                    return;
-                }
-                if (!phone || phone.replace(/\s/g, '').length < 9) {
-                    e.preventDefault();
-                    alert('Please enter a valid phone number');
-                    return;
-                }
-            } else if (selectedMethod === 'bank_transfer') {
-                const bankName = document.querySelector('select[name="bank_name"]').value;
-                const accountNumber = document.querySelector('input[name="account_number"]').value;
-                const accountName = document.querySelector('input[name="account_name"]').value;
-                
-                if (!bankName) {
-                    e.preventDefault();
-                    alert('Please select your bank');
-                    return;
-                }
-                if (!accountNumber || accountNumber.length < 10) {
-                    e.preventDefault();
-                    alert('Please enter a valid account number');
-                    return;
-                }
-                if (!accountName) {
-                    e.preventDefault();
-                    alert('Please enter the account holder name');
-                    return;
-                }
+            if (!selectedAccountId) {
+                e.preventDefault();
+                alert('Please select a withdrawal method');
+                return;
             }
         });
+    });
+
+    function selectSavedAccount(accountId, accountType) {
+        selectedAccountId = accountId;
+        selectedAccountType = accountType;
+        
+        // Update hidden input
+        document.getElementById('saved-account-id').value = accountId;
+        
+        // Remove selected class from all options
+        document.querySelectorAll('.saved-account-option').forEach(option => {
+            option.classList.remove('selected');
+            // Reset the radio circle
+            const radioDiv = option.querySelector('div.flex.items-center.justify-between > div:last-child');
+            if (radioDiv) {
+                radioDiv.classList.remove('border-blue-500', 'bg-blue-500');
+                radioDiv.classList.add('border-gray-300');
+                radioDiv.innerHTML = '';
+            }
+        });
+        
+        // Add selected class to clicked option
+        const selectedOption = document.querySelector(`.saved-account-option[data-account-id="${accountId}"]`);
+        if (selectedOption) {
+            selectedOption.classList.add('selected');
+            const radioDiv = selectedOption.querySelector('div.flex.items-center.justify-between > div:last-child');
+            if (radioDiv) {
+                radioDiv.classList.remove('border-gray-300');
+                radioDiv.classList.add('border-blue-500', 'bg-blue-500');
+                radioDiv.innerHTML = `<svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/>
+                </svg>`;
+            }
+        }
+        
+        console.log(`Selected account: ${accountId} (${accountType})`);
+    }
+
+    // Auto-select default account on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        const defaultAccount = document.querySelector('.saved-account-option .bg-green-100');
+        if (defaultAccount) {
+            const parentDiv = defaultAccount.closest('.saved-account-option');
+            if (parentDiv) {
+                const accountId = parentDiv.getAttribute('data-account-id');
+                const accountType = parentDiv.querySelector('.font-semibold')?.innerText.includes('Mobile') ? 'mobile_money' : 'bank_transfer';
+                if (accountId) {
+                    selectSavedAccount(accountId, accountType);
+                }
+            }
+        } else {
+            // If no default, select the first account if available
+            const firstAccount = document.querySelector('.saved-account-option');
+            if (firstAccount) {
+                const accountId = firstAccount.getAttribute('data-account-id');
+                const accountType = firstAccount.querySelector('.font-semibold')?.innerText.includes('Mobile') ? 'mobile_money' : 'bank_transfer';
+                if (accountId) {
+                    selectSavedAccount(accountId, accountType);
+                }
+            }
+        }
     });
 </script>
 

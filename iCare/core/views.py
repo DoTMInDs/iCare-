@@ -2,6 +2,8 @@ from decimal import Decimal, InvalidOperation
 import json
 import hmac
 import hashlib
+import random
+import string
 
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
@@ -11,13 +13,28 @@ from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
 from django.conf import settings
-from django.db import transaction
+from django.db import transaction, models
 from django.contrib import messages
 
-from .models import RechargeTransaction, UserBalance, WithdrawalTransaction, Product, UserInvestment
+from .models import (
+    RechargeTransaction, UserBalance, WithdrawalTransaction, Product, 
+    UserInvestment, ProductTransaction, SavedAccount, Task, UserTask, UserCheckin,
+    ReferralCode, UserReferral, TeamMember, ReferralCommission
+)
+from iCare_auth.models import User
 from .paystack_service import PaystackService
 from django.db.models import Sum
 from django.urls import reverse
+from datetime import date, timedelta
+from iCare.tasks import (
+    process_referral_commission,
+    update_team_volumes
+)
+
+
+def generate_referral_code():
+    """Generate unique referral code"""
+    return ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
 
 # Create your views here.
 @login_required
@@ -40,6 +57,8 @@ def recharge(request):
     selected_payment = 'GHS 1'
     error = ''
     success = ''
+
+    saved_accounts = SavedAccount.objects.filter(user=request.user)
 
     if request.method == 'POST':
         selected_amount = request.POST.get('amount', '').strip()
@@ -73,10 +92,14 @@ def recharge(request):
                     phone_digits = ''.join(filter(str.isdigit, str(request.user.phone_number)))
                     user_email = f"user{phone_digits[-6:]}@icare.com"  # Use .com instead of .local
                 
+                # callback_url should point to a view that can handle the payment verification
+                callback_url = request.build_absolute_uri(reverse('payment_callback'))
+
                 result = paystack_service.initialize_payment(
                     email=user_email,
                     amount=amount,
                     reference=reference,
+                    callback_url=callback_url,
                     metadata={
                         'user_id': request.user.id,
                         'payment_method': selected_payment,
@@ -113,6 +136,7 @@ def recharge(request):
         'selected_payment': selected_payment,
         'error': error,
         'success': success,
+        'saved_accounts' : saved_accounts,
     }
     return render(request, 'iCare/services/pages/recharge.html', context)
 
@@ -142,7 +166,6 @@ def recharge_records(request):
     }
     return render(request, 'iCare/services/pages/recharge-records.html', context)
 
-
 @login_required
 def payment_callback(request):
     """
@@ -151,7 +174,14 @@ def payment_callback(request):
     """
     reference = request.GET.get('reference')
     
+    print(f"=== PAYMENT CALLBACK DEBUG ===")
+    print(f"Reference: {reference}")
+    print(f"Full URL: {request.build_absolute_uri()}")
+    print(f"User: {request.user}")
+    
     if not reference:
+        print("No reference found in callback")
+        messages.error(request, 'Invalid payment reference.')
         return redirect('recharge_records')
     
     # Verify payment with Paystack
@@ -159,13 +189,20 @@ def payment_callback(request):
         paystack_service = PaystackService()
         result = paystack_service.verify_payment(reference)
         
+        print(f"Verification result: {result}")
+        
         # Find the transaction
         try:
             charge_transaction = RechargeTransaction.objects.get(paystack_reference=reference)
+            print(f"Found transaction: {charge_transaction.reference}, Amount: {charge_transaction.amount}")
         except RechargeTransaction.DoesNotExist:
+            print(f"Transaction not found for reference: {reference}")
+            messages.error(request, 'Transaction not found.')
             return redirect('recharge_records')
         
         if result['success'] and result['status'] == 'success':
+            print("Payment verification successful!")
+            
             # Payment successful - mark transaction and update balance
             charge_transaction.mark_success()
             
@@ -177,16 +214,25 @@ def payment_callback(request):
             
             # Add the charged amount to user balance
             user_balance.add_balance(charge_transaction.amount)
+            print(f"Balance updated. New balance: {user_balance.balance}")
+            
+            # Add success message
+            messages.success(request, f'Payment of GHS {charge_transaction.amount} successful! Your wallet has been credited.')
             
             # Redirect to recharge_records with success message
-            return redirect(f"{reverse('recharge_records')}?payment_success=1&amount={charge_transaction.amount}")
+            return redirect('recharge_records')
         else:
             # Payment failed
+            print(f"Payment verification failed. Status: {result.get('status')}")
             charge_transaction.mark_failed()
+            messages.error(request, 'Payment verification failed. Please contact support.')
             return redirect('recharge')
     
     except Exception as e:
         print(f"Payment callback error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        messages.error(request, f'An error occurred: {str(e)}')
         return redirect('recharge_records')
 
 
@@ -239,24 +285,22 @@ def payment_webhook(request):
 
 @login_required
 def withdrawal(request):
-    """Handle withdrawal requests"""
+    """Handle withdrawal requests with saved accounts"""
     # Get user balance
     user_balance, created = UserBalance.objects.get_or_create(
         user=request.user,
         defaults={'balance': 0, 'currency': 'GHS'}
     )
     
+    # Get saved accounts
+    saved_accounts = SavedAccount.objects.filter(user=request.user)
+    
     error = ''
     success = ''
-    selected_method = 'mobile_money'  # Default
-    context_data = {
-        'user_balance': user_balance,
-        'selected_method': selected_method,
-    }
     
     if request.method == 'POST':
         amount_str = request.POST.get('amount', '').strip()
-        selected_method = request.POST.get('withdrawal_method', 'mobile_money')
+        saved_account_id = request.POST.get('saved_account_id', '')
         
         # Validate amount
         try:
@@ -265,9 +309,8 @@ def withdrawal(request):
             error = 'Please enter a valid amount.'
             return render(request, 'iCare/services/pages/withdrawal.html', {
                 'user_balance': user_balance,
+                'saved_accounts': saved_accounts,
                 'error': error,
-                'selected_method': selected_method,
-                **request.POST
             })
         
         # Check minimum amount
@@ -276,70 +319,54 @@ def withdrawal(request):
         elif amount > user_balance.balance:
             error = 'Insufficient balance for this withdrawal.'
         
-        # Validate based on withdrawal method
-        if not error:
-            if selected_method == 'mobile_money':
-                network = request.POST.get('network', '')
-                phone_number = request.POST.get('phone_number', '')
-                
-                if not network:
-                    error = 'Please select your mobile money network.'
-                elif not phone_number or len(phone_number.replace(' ', '')) < 9:
-                    error = 'Please enter a valid phone number.'
-            
-            elif selected_method == 'bank_transfer':
-                bank_name = request.POST.get('bank_name', '')
-                account_number = request.POST.get('account_number', '')
-                account_name = request.POST.get('account_name', '')
-                
-                if not bank_name:
-                    error = 'Please select your bank.'
-                elif not account_number or len(account_number) < 10:
-                    error = 'Please enter a valid account number.'
-                elif not account_name:
-                    error = 'Please enter the account holder name.'
+        # Get the saved account
+        if not error and saved_account_id:
+            try:
+                saved_account = SavedAccount.objects.get(id=saved_account_id, user=request.user)
+            except SavedAccount.DoesNotExist:
+                error = 'Selected withdrawal method not found.'
         
-        # Process withdrawal if no errors
         if not error:
             with transaction.atomic():
                 # Deduct balance
                 if user_balance.deduct_balance(amount):
-                    # Create withdrawal transaction record
+                    # Create withdrawal transaction record with saved account details
+                    withdrawal_details = {
+                        'method': saved_account.account_type,
+                        'saved_account_id': str(saved_account.id),
+                    }
+                    
+                    if saved_account.account_type == 'mobile_money':
+                        withdrawal_details['network'] = saved_account.network
+                        withdrawal_details['phone_number'] = saved_account.phone_number
+                    else:
+                        withdrawal_details['bank_name'] = saved_account.bank_name
+                        withdrawal_details['account_number'] = saved_account.account_number
+                        withdrawal_details['account_name'] = saved_account.account_name
+                    
                     withdrawal_transaction = WithdrawalTransaction.objects.create(
                         user=request.user,
                         amount=amount,
                         currency='GHS',
                         status=WithdrawalTransaction.STATUS_PENDING,
-                        withdrawal_method=selected_method,
-                        # Store withdrawal details in JSON or separate fields
-                        withdrawal_details={
-                            'method': selected_method,
-                            'network': request.POST.get('network') if selected_method == 'mobile_money' else None,
-                            'phone_number': request.POST.get('phone_number') if selected_method == 'mobile_money' else None,
-                            'bank_name': request.POST.get('bank_name') if selected_method == 'bank_transfer' else None,
-                            'account_number': request.POST.get('account_number') if selected_method == 'bank_transfer' else None,
-                            'account_name': request.POST.get('account_name') if selected_method == 'bank_transfer' else None,
-                        }
+                        withdrawal_method=saved_account.account_type,
+                        withdrawal_details=withdrawal_details
                     )
                     
-                    success = f'Withdrawal request of GHS {amount} submitted successfully! Funds will be processed shortly.'
-                    return redirect(f"{reverse('withdrawal_records')}?success_message={success}")
+                    messages.success(request, f'Withdrawal request of GHS {amount} submitted successfully!')
+                    return redirect('withdrawal_records')
                 else:
                     error = 'Failed to process withdrawal. Please try again.'
         
-        # Update context with form data
-        context_data.update({
-            'error': error,
-            'success': success,
-            'selected_method': selected_method,
-            'network': request.POST.get('network', ''),
-            'phone_number': request.POST.get('phone_number', ''),
-            'bank_name': request.POST.get('bank_name', ''),
-            'account_number': request.POST.get('account_number', ''),
-            'account_name': request.POST.get('account_name', ''),
-        })
+        # If error, show message
+        if error:
+            messages.error(request, error)
     
-    return render(request, 'iCare/services/pages/withdrawal.html', context_data)
+    context = {
+        'user_balance': user_balance,
+        'saved_accounts': saved_accounts,
+    }
+    return render(request, 'iCare/services/pages/withdrawal.html', context)
 
 
 @login_required
@@ -392,7 +419,7 @@ def cancel_withdrawal(request, transaction_id):
         return JsonResponse({'success': False, 'message': str(e)}, status=500)
 
 @login_required
-def account(request):
+def account_balance(request):
     """Display user account and balance information"""
     # Get or create user balance
     user_balance, created = UserBalance.objects.get_or_create(
@@ -400,16 +427,50 @@ def account(request):
         defaults={'balance': 0, 'currency': 'GHS'}
     )
     
+    # Get saved accounts
+    saved_accounts = SavedAccount.objects.filter(user=request.user)
+    
     # Get recent transactions
     recent_transactions = RechargeTransaction.objects.filter(
         user=request.user
-    ).order_by('-created_at')[:10]
+    ).order_by('-created_at')[:5]
+    
+    # Get recent withdrawals
+    recent_withdrawals = WithdrawalTransaction.objects.filter(
+        user=request.user
+    )[:5]
+    
+    # Get active investments
+    active_investments = UserInvestment.objects.filter(
+        user=request.user,
+        status='active'
+    ).select_related('product')[:3]
+    
+    # Calculate stats
+    total_invested = UserInvestment.objects.filter(
+        user=request.user,
+        status='active'
+    ).aggregate(Sum('amount'))['amount__sum'] or 0
+    
+    investments = UserInvestment.objects.filter(user=request.user, status='active')
+    total_earnings = 0
+    for investment in investments:
+        total_earnings += investment.calculate_earned_so_far()
+    
+    net_balance = user_balance.balance + total_earnings - total_invested
     
     context = {
         'user_balance': user_balance,
+        'user': request.user,
+        'saved_accounts': saved_accounts,
         'recent_transactions': recent_transactions,
+        'recent_withdrawals': recent_withdrawals,
+        'active_investments': active_investments,
+        'total_invested': total_invested,
+        'total_earnings': total_earnings,
+        'net_balance': net_balance,
     }
-    return render(request, 'iCare/services/pages/account.html', context)
+    return render(request, 'iCare/services/pages/account_balance.html', context)
 
 @login_required
 def product(request):
@@ -419,6 +480,8 @@ def product(request):
         user=request.user,
         defaults={'balance': 0, 'currency': 'GHS'}
     )
+
+    saved_accounts = SavedAccount.objects.filter(user=request.user)
     
     # Get user's active investments
     user_investments = UserInvestment.objects.filter(
@@ -436,6 +499,7 @@ def product(request):
         'products': products,
         'user_balance': user_balance,
         'user_investments': user_investments,
+        'saved_accounts': saved_accounts,
     }
     return render(request, 'iCare/services/product.html', context)
 
@@ -464,15 +528,23 @@ def product_details(request):
     except Product.DoesNotExist:
         return JsonResponse({'error': 'Product not found'}, status=404)
 
+
 @login_required
 @require_http_methods(['POST'])
 def purchase_product(request):
-    """Handle product purchase"""
+    """Handle product purchase with Paystack payment integration"""
     product_id = request.POST.get('product_id')
-    payment_method = request.POST.get('payment_method')
+    payment_method_id = request.POST.get('payment_method_id')
+    payment_method_type = request.POST.get('payment_method_type')
+    
+    print(f"=== PURCHASE PRODUCT DEBUG ===")
+    print(f"Product ID: {product_id}")
+    print(f"Payment Method ID: {payment_method_id}")
+    print(f"Payment Method Type: {payment_method_type}")
     
     try:
         product = Product.objects.get(id=product_id)
+        print(f"Product found: {product.name}, Price: {product.price}")
     except Product.DoesNotExist:
         messages.error(request, 'Product not found.')
         return redirect('product')
@@ -482,7 +554,9 @@ def purchase_product(request):
         defaults={'balance': 0, 'currency': 'GHS'}
     )
     
-    if payment_method == 'wallet':
+    # Handle wallet payment directly
+    if payment_method_type == 'wallet':
+        print("Processing wallet payment...")
         if user_balance.balance >= product.price:
             with transaction.atomic():
                 # Deduct from wallet
@@ -496,34 +570,972 @@ def purchase_product(request):
                     status='active'
                 )
                 
+                
+                print(f"Wallet payment successful! Investment ID: {investment.id}")
                 messages.success(request, f'Successfully purchased {product.name}! Your investment is now active.')
+                return redirect('my_investments')
         else:
-            messages.error(request, 'Insufficient balance. Please recharge your wallet.')
-    else:
-        # For other payment methods, redirect to payment gateway
-        return redirect(f"{reverse('recharge')}?amount={product.price}&product={product_id}&payment_method={payment_method}")
+            print(f"Insufficient balance. Balance: {user_balance.balance}, Price: {product.price}")
+            messages.error(request, 'Insufficient balance. Please recharge your wallet or select another payment method.')
+            return redirect('product')
     
-    return redirect('product')
+    # Handle Paystack payment for card or mobile money from saved accounts
+    else:
+        print(f"Processing Paystack payment for saved {payment_method_type} account...")
+        
+        # Generate unique reference
+        reference = 'P' + timezone.now().strftime('%y%m%d%H%M%S') + get_random_string(5, '0123456789')
+        print(f"Generated reference: {reference}")
+        
+        try:
+            paystack_service = PaystackService()
+            
+            # Generate email for Paystack
+            if request.user.email:
+                user_email = request.user.email
+            else:
+                phone_digits = ''.join(filter(str.isdigit, str(request.user.phone_number)))
+                user_email = f"user{phone_digits[-6:]}@icare.com"
+            
+            print(f"User email: {user_email}")
+            
+            # IMPORTANT: Set the callback URL
+            callback_url = request.build_absolute_uri(reverse('product_payment_callback'))
+            print(f"Callback URL: {callback_url}")
+            
+            # Get saved account details if it's a saved payment method
+            saved_account = None
+            if payment_method_id and payment_method_id != 'wallet':
+                try:
+                    saved_account = SavedAccount.objects.get(id=payment_method_id, user=request.user)
+                    print(f"Found saved account: {saved_account}")
+                except SavedAccount.DoesNotExist:
+                    print(f"Saved account not found: {payment_method_id}")
+            
+            # Prepare metadata
+            metadata = {
+                'user_id': str(request.user.id),
+                'product_id': str(product.id),
+                'product_name': product.name,
+                'payment_type': 'product_purchase',
+                'payment_method_type': payment_method_type,
+            }
+            
+            # Add saved account info to metadata if available
+            if saved_account:
+                metadata['saved_account_id'] = str(saved_account.id)
+                metadata['saved_account_type'] = saved_account.account_type
+                if saved_account.account_type == 'mobile_money':
+                    metadata['phone_number'] = saved_account.phone_number
+                    metadata['network'] = saved_account.network
+                else:
+                    metadata['bank_name'] = saved_account.bank_name
+                    metadata['account_number'] = saved_account.account_number
+            
+            # Initialize payment with Paystack
+            result = paystack_service.initialize_payment(
+                email=user_email,
+                amount=float(product.price),
+                reference=reference,
+                callback_url=callback_url,
+                metadata=metadata
+            )
+            
+            print(f"Paystack initialization result: {result}")
+            
+            if result['success']:
+                print(f"Paystack init successful! Auth URL: {result['authorization_url']}")
+                # Create product transaction record
+                with transaction.atomic():
+                    product_transaction = ProductTransaction.objects.create(
+                        user=request.user,
+                        product=product,
+                        reference=reference,
+                        amount=product.price,
+                        currency='GHS',
+                        payment_method=payment_method_type,
+                        status=ProductTransaction.STATUS_IN_PROGRESS,
+                        paystack_reference=result['reference'],
+                        paystack_access_code=result['access_code'],
+                        paystack_auth_url=result['authorization_url'],
+                    )
+                    print(f"Product transaction created: {product_transaction.id}")
+                
+                # Store product info in session for callback
+                request.session['pending_product_purchase'] = {
+                    'product_id': str(product.id),
+                    'transaction_id': str(product_transaction.id),
+                    'amount': str(product.price),
+                }
+                process_referral_commission.delay(investment.id)
+
+                update_team_volumes.delay(request.user.id)
+                
+                # Redirect to Paystack payment page
+                return redirect(result['authorization_url'])
+            else:
+                print(f"Paystack initialization failed: {result.get('message')}")
+                messages.error(request, f'Payment initialization failed: {result.get("message")}')
+                return redirect('product')
+                
+        except Exception as e:
+            print(f"Exception in Paystack payment: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            messages.error(request, f'Payment error: {str(e)}')
+            return redirect('product')
+        
+
+@login_required
+def product_payment_callback(request):
+    """
+    Handle callback from Paystack after product payment completion.
+    Redirects to my_investments page after successful payment.
+    """
+    reference = request.GET.get('reference')
+    
+    print(f"=== PRODUCT PAYMENT CALLBACK DEBUG ===")
+    print(f"Reference: {reference}")
+    
+    if not reference:
+        messages.error(request, 'Invalid payment reference.')
+        return redirect('product')
+    
+    try:
+        paystack_service = PaystackService()
+        result = paystack_service.verify_payment(reference)
+        
+        print(f"Verification result: {result}")
+        
+        # Find the product transaction
+        try:
+            product_transaction = ProductTransaction.objects.get(paystack_reference=reference)
+            print(f"Found product transaction: {product_transaction.id}")
+        except ProductTransaction.DoesNotExist:
+            messages.error(request, 'Transaction not found.')
+            return redirect('product')
+        
+        if result['success'] and result['status'] == 'success':
+            print("Payment verification successful!")
+            
+            # Check if investment already exists (to avoid duplicates)
+            existing_investment = UserInvestment.objects.filter(
+                user=request.user,
+                product=product_transaction.product,
+                transaction_reference=product_transaction.reference
+            ).exists()
+            
+            if not existing_investment:
+                with transaction.atomic():
+                    # Mark transaction as success
+                    product_transaction.mark_success()
+                    
+                    # Create investment record
+                    investment = UserInvestment.objects.create(
+                        user=request.user,
+                        product=product_transaction.product,
+                        amount=product_transaction.amount,
+                        status='active',
+                        transaction_reference=product_transaction.reference  # This now exists
+                    )
+                    print(f"Investment created: {investment.id}")
+                    messages.success(request, f'Successfully purchased {product_transaction.product.name}! Your investment is now active.')
+            else:
+                print("Investment already exists")
+                messages.info(request, 'Investment already recorded.')
+            
+            # Clear session data
+            if 'pending_product_purchase' in request.session:
+                del request.session['pending_product_purchase']
+            
+            # Redirect to my investments page
+            return redirect('my_investments')
+        else:
+            # Payment failed
+            print(f"Payment verification failed. Status: {result.get('status')}")
+            product_transaction.mark_failed()
+            messages.error(request, 'Payment verification failed. Please contact support.')
+            return redirect('product')
+    
+    except Exception as e:
+        print(f"Product payment callback error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        messages.error(request, f'An error occurred: {str(e)}')
+        return redirect('product')
+
+
+@csrf_exempt
+@require_http_methods(['POST'])
+def product_payment_webhook(request):
+    """
+    Handle webhook from Paystack for product payment verification.
+    """
+    # Verify Paystack signature
+    signature = request.META.get('HTTP_X_PAYSTACK_SIGNATURE', '')
+    body = request.body
+    secret = settings.PAYSTACK_SECRET_KEY.encode()
+    
+    hash_object = hmac.new(secret, body, hashlib.sha512)
+    computed_signature = hash_object.hexdigest()
+    
+    if not hmac.compare_digest(signature, computed_signature):
+        return JsonResponse({'status': 'error', 'message': 'Invalid signature'}, status=401)
+    
+    try:
+        data = json.loads(request.body)
+        reference = data.get('data', {}).get('reference')
+        event = data.get('event')
+        
+        if not reference:
+            return JsonResponse({'status': 'error', 'message': 'Missing reference'}, status=400)
+        
+        # Only process charge.success events
+        if event == 'charge.success':
+            try:
+                product_transaction = ProductTransaction.objects.get(paystack_reference=reference)
+            except ProductTransaction.DoesNotExist:
+                return JsonResponse({'status': 'error', 'message': 'Transaction not found'}, status=404)
+            
+            # Verify with Paystack
+            paystack_service = PaystackService()
+            result = paystack_service.verify_payment(reference)
+            
+            if result['success'] and result['status'] == 'success':
+                # Check if investment already created
+                existing_investment = UserInvestment.objects.filter(
+                    user=product_transaction.user,
+                    product=product_transaction.product,
+                    transaction_reference=product_transaction.reference
+                ).exists()
+                
+                if not existing_investment:
+                    with transaction.atomic():
+                        product_transaction.mark_success()
+                        
+                        # Create investment
+                        UserInvestment.objects.create(
+                            user=product_transaction.user,
+                            product=product_transaction.product,
+                            amount=product_transaction.amount,
+                            status='active',
+                            transaction_reference=product_transaction.reference
+                        )
+                
+                return JsonResponse({'status': 'success', 'message': 'Product purchase verified'})
+            else:
+                product_transaction.mark_failed()
+                return JsonResponse({'status': 'failed', 'message': 'Payment verification failed'})
+        
+        return JsonResponse({'status': 'ignored', 'message': 'Event not processed'})
+    
+    except json.JSONDecodeError:
+        return JsonResponse({'status': 'error', 'message': 'Invalid JSON'}, status=400)
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
 @login_required
 def my_investments(request):
     """Display user's all investments"""
     investments = UserInvestment.objects.filter(user=request.user).select_related('product').order_by('-created_at')
     
+    total_invested = 0
+    active_count = 0
+    
     for investment in investments:
         investment.total_earned = investment.calculate_earned_so_far()
         investment.days_remaining = investment.get_days_remaining()
         investment.progress_percentage = investment.get_progress_percentage()
+        
+        if investment.status == 'active':
+            total_invested += float(investment.amount)
+            active_count += 1
     
     context = {
         'investments': investments,
+        'total_invested': total_invested,
+        'active_count': active_count,
         'user_balance': UserBalance.objects.get_or_create(user=request.user)[0],
     }
     return render(request, 'iCare/services/pages/my_investments.html', context)
 
+@login_required
+@require_http_methods(['POST'])
+def add_saved_account(request):
+    """Add a new saved account for withdrawals"""
+    account_type = request.POST.get('account_type')
+    
+    try:
+        with transaction.atomic():
+            if account_type == 'mobile_money':
+                network = request.POST.get('network')
+                phone_number = request.POST.get('phone_number')
+                
+                # Validate
+                if not network or not phone_number:
+                    messages.error(request, 'Please fill all mobile money fields.')
+                    return redirect('saved_payment_methods')
+                
+                # Clean phone number
+                phone_number = ''.join(filter(str.isdigit, phone_number))
+                # Remove leading 0 or 233
+                if phone_number.startswith('233'):
+                    phone_number = phone_number[3:]
+                elif phone_number.startswith('0'):
+                    phone_number = phone_number[1:]
+                
+                # Validate length
+                if len(phone_number) != 9:
+                    messages.error(request, 'Please enter a valid 9-digit phone number (e.g., 202739333)')
+                    return redirect('saved_payment_methods')
+                
+                # Check for duplicate
+                existing = SavedAccount.objects.filter(
+                    user=request.user,
+                    account_type='mobile_money',
+                    network=network,
+                    phone_number=phone_number
+                ).exists()
+                
+                if existing:
+                    messages.warning(request, f'This {network.upper()} account is already saved.')
+                    return redirect('saved_payment_methods')
+                
+                saved_account = SavedAccount.objects.create(
+                    user=request.user,
+                    account_type='mobile_money',
+                    network=network,
+                    phone_number=phone_number,
+                )
+                
+                messages.success(request, f'{network.upper()} account ending with {phone_number[-4:]} saved successfully!')
+                
+            elif account_type == 'bank_transfer':
+                bank_name = request.POST.get('bank_name')
+                account_number = request.POST.get('account_number')
+                account_name = request.POST.get('account_name')
+                
+                # Validate
+                if not bank_name or not account_number or not account_name:
+                    messages.error(request, 'Please fill all bank account fields.')
+                    return redirect('saved_payment_methods')
+                
+                # Clean account number (remove spaces)
+                account_number = ''.join(filter(str.isdigit, account_number))
+                
+                # Check for duplicate
+                existing = SavedAccount.objects.filter(
+                    user=request.user,
+                    account_type='bank_transfer',
+                    bank_name=bank_name,
+                    account_number=account_number
+                ).exists()
+                
+                if existing:
+                    messages.warning(request, f'This {bank_name} account is already saved.')
+                    return redirect('saved_payment_methods')
+                
+                saved_account = SavedAccount.objects.create(
+                    user=request.user,
+                    account_type='bank_transfer',
+                    bank_name=bank_name,
+                    account_number=account_number,
+                    account_name=account_name,
+                )
+                
+                messages.success(request, f'{bank_name} account ending with {account_number[-4:]} saved successfully!')
+            
+            else:
+                messages.error(request, 'Invalid account type.')
+                return redirect('saved_payment_methods')
+            
+            # If this is the first account, set as default
+            if SavedAccount.objects.filter(user=request.user).count() == 1:
+                saved_account.is_default = True
+                saved_account.save()
+                messages.success(request, 'This account has been set as your default payment method.')
+            
+            return redirect('saved_payment_methods')
+            
+    except Exception as e:
+        messages.error(request, f'Error saving account: {str(e)}')
+        return redirect('saved_payment_methods')
+
+
+@login_required
+@require_http_methods(['POST'])
+def set_default_account(request, account_id):
+    """Set a saved account as default"""
+    try:
+        with transaction.atomic():
+            # Reset all accounts to non-default
+            SavedAccount.objects.filter(user=request.user).update(is_default=False)
+            
+            # Set the selected account as default
+            account = SavedAccount.objects.get(id=account_id, user=request.user)
+            account.is_default = True
+            account.save()
+            
+            messages.success(request, 'Default payment method updated successfully.')
+    except SavedAccount.DoesNotExist:
+        messages.error(request, 'Account not found.')
+    except Exception as e:
+        messages.error(request, f'Error: {str(e)}')
+    
+    return redirect('account')
+
+
+@login_required
+@require_http_methods(['POST'])
+def delete_saved_account(request, account_id):
+    """Delete a saved account"""
+    try:
+        account = SavedAccount.objects.get(id=account_id, user=request.user)
+        was_default = account.is_default
+        account.delete()
+        
+        # If we deleted the default account, set another as default if available
+        if was_default:
+            next_account = SavedAccount.objects.filter(user=request.user).first()
+            if next_account:
+                next_account.is_default = True
+                next_account.save()
+        
+        messages.success(request, 'Account removed successfully.')
+    except SavedAccount.DoesNotExist:
+        messages.error(request, 'Account not found.')
+    except Exception as e:
+        messages.error(request, f'Error: {str(e)}')
+    
+    return redirect('account')
+
+
+@login_required
+def get_saved_accounts_json(request):
+    """AJAX endpoint to get user's saved accounts"""
+    accounts = SavedAccount.objects.filter(user=request.user)
+    data = []
+    for account in accounts:
+        data.append({
+            'id': str(account.id),
+            'account_type': account.account_type,
+            'display_name': str(account),
+            'is_default': account.is_default,
+            'network': account.network,
+            'phone_number': account.phone_number,
+            'bank_name': account.bank_name,
+            'account_number': account.account_number,
+            'account_name': account.account_name,
+        })
+    return JsonResponse(data, safe=False)
+
+
+def saved_payment_methods(request):
+    """Display user's saved payment methods"""
+    saved_accounts = SavedAccount.objects.filter(user=request.user)
+    
+    # Prepare JSON data for JavaScript validation
+    accounts_json = []
+    for account in saved_accounts:
+        if account.account_type == 'mobile_money':
+            accounts_json.append({
+                'account_type': account.account_type,
+                'network': account.network,
+                'phone_number': account.phone_number,
+            })
+        else:
+            accounts_json.append({
+                'account_type': account.account_type,
+                'bank_name': account.bank_name,
+                'account_number': account.account_number,
+            })
+    
+    context = {
+        'saved_accounts': saved_accounts,
+        'saved_accounts_json': json.dumps(accounts_json),
+    }
+    return render(request, 'iCare/services/pages/saved-payment-methods.html', context)
+
+
+@login_required
 def tasks(request):
-    return render(request, 'iCare/services/pages/tasks.html')
+    """Display tasks and user progress"""
+    tasks_list = Task.objects.filter(is_active=True)
+    user_tasks = UserTask.objects.filter(user=request.user, status='completed').values_list('task_id', flat=True)
+    
+    # Get or create checkin record
+    checkin, created = UserCheckin.objects.get_or_create(user=request.user)
+    
+    # Calculate check-in bonus based on streak
+    daily_bonus = 1.00 + (checkin.streak * 0.50)
+    if daily_bonus > 10:
+        daily_bonus = 10
+    
+    checked_in_today = checkin.last_checkin_date == date.today()
+    
+    context = {
+        'tasks': tasks_list,
+        'completed_tasks': user_tasks,
+        'completed_tasks_count': user_tasks.count(),
+        'available_tasks_count': tasks_list.exclude(id__in=user_tasks).count(),
+        'total_tasks_count': tasks_list.count(),
+        'total_task_earnings': UserTask.objects.filter(user=request.user, status='completed').aggregate(Sum('task__reward'))['task__reward__sum'] or 0,
+        'checkin_streak': checkin.streak,
+        'daily_bonus': daily_bonus,
+        'checked_in_today': checked_in_today,
+        'referral_link': request.build_absolute_uri(reverse('signup')) + f'?ref={request.user.id}',
+        'referral_bonus': 5.00,
+    }
+    return render(request, 'iCare/services/pages/tasks.html', context)
 
 
+@login_required
+def task_details(request):
+    """AJAX endpoint to get task details"""
+    task_id = request.GET.get('id')
+    try:
+        task = Task.objects.get(id=task_id)
+        data = {
+            'id': str(task.id),
+            'title': task.title,
+            'description': task.description,
+            'instructions': task.instructions,
+            'steps': task.steps,
+            'task_url': task.task_url,
+            'reward': float(task.reward),
+        }
+        return JsonResponse(data)
+    except Task.DoesNotExist:
+        return JsonResponse({'error': 'Task not found'}, status=404)
+
+
+@login_required
+@require_http_methods(['POST'])
+def complete_task(request):
+    """Complete a task and credit reward"""
+    data = json.loads(request.body)
+    task_id = data.get('task_id')
+    
+    try:
+        task = Task.objects.get(id=task_id)
+    except Task.DoesNotExist:
+        return JsonResponse({'success': False, 'message': 'Task not found'})
+    
+    # Check if task already completed
+    if UserTask.objects.filter(user=request.user, task=task, status='completed').exists():
+        return JsonResponse({'success': False, 'message': 'Task already completed'})
+    
+    with transaction.atomic():
+        # Create user task record
+        user_task = UserTask.objects.create(
+            user=request.user,
+            task=task,
+            status='completed',
+            completed_at=timezone.now()
+        )
+        
+        # Credit reward to wallet
+        user_balance, created = UserBalance.objects.get_or_create(
+            user=request.user,
+            defaults={'balance': 0, 'currency': 'GHS'}
+        )
+        user_balance.add_balance(task.reward)
+    
+    return JsonResponse({'success': True, 'message': 'Task completed!', 'reward': float(task.reward)})
+
+
+@login_required
+@require_http_methods(['POST'])
+def daily_checkin(request):
+    """Handle daily check-in bonus"""
+    checkin, created = UserCheckin.objects.get_or_create(user=request.user)
+    
+    # Check if already checked in today
+    if checkin.last_checkin_date == date.today():
+        return JsonResponse({'success': False, 'message': 'Already checked in today'})
+    
+    # Calculate bonus based on streak
+    if checkin.last_checkin_date == date.today() - timedelta(days=1):
+        checkin.streak += 1
+    else:
+        checkin.streak = 1
+    
+    bonus = 1.00 + (min(checkin.streak, 10) * 0.50)
+    if bonus > 10:
+        bonus = 10
+    
+    checkin.last_checkin_date = date.today()
+    checkin.total_checkins += 1
+    checkin.save()
+    
+    # Credit bonus to wallet
+    user_balance, created = UserBalance.objects.get_or_create(
+        user=request.user,
+        defaults={'balance': 0, 'currency': 'GHS'}
+    )
+    user_balance.add_balance(bonus)
+    
+    return JsonResponse({'success': True, 'message': 'Check-in successful!', 'bonus': float(bonus), 'streak': checkin.streak})
+
+
+@login_required
 def check_in(request):
-    return render(request, 'iCare/services/pages/check_in.html')
+    """Display check-in page with streak information"""
+    # Get or create check-in record
+    checkin, created = UserCheckin.objects.get_or_create(user=request.user)
+    
+    # Calculate today's bonus based on streak
+    if checkin.streak >= 10:
+        today_bonus = 3.00
+        next_streak_bonus = 3.00
+    elif checkin.streak >= 7:
+        today_bonus = 2.50
+        next_streak_bonus = 2.50
+    elif checkin.streak >= 5:
+        today_bonus = 2.00
+        next_streak_bonus = 2.00
+    elif checkin.streak >= 3:
+        today_bonus = 1.50
+        next_streak_bonus = 2.00
+    else:
+        today_bonus = 1.00
+        next_streak_bonus = 1.50
+    
+    # Check if user has checked in today
+    has_checked_in_today = (checkin.last_checkin_date == date.today())
+    
+    # Calculate total check-ins
+    total_checkins = checkin.total_checkins
+    
+    # Calculate total earned from check-ins (simplified)
+    total_earned = total_checkins * 1.5  # Approximate average
+    
+    # Generate week days for calendar
+    week_days = []
+    today = date.today()
+    for i in range(7):
+        day_date = today + timedelta(days=i)
+        week_days.append({
+            'day_short': day_date.strftime('%a'),
+            'day_num': day_date.day,
+            'checked_in': checkin.last_checkin_date == day_date,
+            'is_today': i == 0,
+        })
+    
+    context = {
+        'streak': checkin.streak,
+        'today_bonus': today_bonus,
+        'next_streak_bonus': next_streak_bonus,
+        'has_checked_in_today': has_checked_in_today,
+        'total_checkins': total_checkins,
+        'total_earned': total_earned,
+        'week_days': week_days,
+    }
+    return render(request, 'iCare/services/pages/check_in.html', context)
+
+
+
+@login_required
+def team(request):
+    """Display team structure and referral information"""
+    user = request.user
+    
+    # Get or create referral code
+    referral_code, created = ReferralCode.objects.get_or_create(
+        user=user,
+        defaults={'code': generate_referral_code()}
+    )
+    
+    # Get team member record
+    team_member, created = TeamMember.objects.get_or_create(
+        user=user,
+        defaults={'sponsor': None, 'position': None}
+    )
+    
+    # Calculate team statistics
+    direct_downline = UserReferral.objects.filter(referrer=user, level=1).count()
+    total_team = UserReferral.objects.filter(referrer=user).count()
+    
+    # Get left and right team counts
+    left_team = TeamMember.objects.filter(sponsor=user, position='left').count()
+    right_team = TeamMember.objects.filter(sponsor=user, position='right').count()
+    
+    # Calculate volumes
+    left_volume = team_member.left_volume
+    right_volume = team_member.right_volume
+    weak_leg_volume = min(left_volume, right_volume)
+    
+    # Calculate commissions
+    matching_bonus = weak_leg_volume * Decimal('0.10')  # 10% of weak leg
+    flushed_amount = max(left_volume, right_volume) - weak_leg_volume
+    
+    # Get downline members with details
+    downline_members = []
+    referrals = UserReferral.objects.filter(referrer=user).select_related('referred_user')
+    
+    for ref in referrals:
+        referred = ref.referred_user
+        # Get referred user's team member record
+        try:
+            ref_team = TeamMember.objects.get(user=referred)
+            position = ref_team.position
+        except TeamMember.DoesNotExist:
+            position = None
+        
+        # Get referred user's investment
+        total_investment = UserInvestment.objects.filter(
+            user=referred,
+            status='active'
+        ).aggregate(total=models.Sum('amount'))['total'] or 0
+        
+        downline_members.append({
+            'id': referred.id,
+            'full_name': f"{referred.profile.full_name}".strip() or str(referred.phone_number),
+            'phone_number': str(referred.phone_number),
+            'position': position,
+            'investment': float(total_investment),
+            'joined_date': ref.created_at,
+            'is_active': hasattr(referred, 'team_member') and referred.team_member.is_active,
+            'level': ref.level,
+        })
+    
+    # Calculate total team volume
+    team_volume = TeamMember.objects.filter(sponsor=user).aggregate(
+        total=models.Sum('total_volume')
+    )['total'] or 0
+    
+    # Calculate team earnings
+    team_earnings = ReferralCommission.objects.filter(
+        user=user,
+        is_paid=True
+    ).aggregate(total=models.Sum('amount'))['total'] or 0
+    
+    # Get recent team activities
+    recent_activities = []
+    
+    # Recent joins
+    recent_joins = UserReferral.objects.filter(
+        referrer=user
+    ).order_by('-created_at')[:5]
+    
+    for join in recent_joins:
+        recent_activities.append({
+            'type': 'join',
+            'message': f"{join.referred_user.phone_number} joined your team",
+            'time': join.created_at.strftime("%H:%M, %b %d")
+        })
+    
+    # Recent investments from team members
+    team_user_ids = UserReferral.objects.filter(referrer=user).values_list('referred_user_id', flat=True)
+    recent_investments = UserInvestment.objects.filter(
+        user_id__in=team_user_ids,
+        status='active'
+    ).order_by('-created_at')[:5]
+    
+    for inv in recent_investments:
+        recent_activities.append({
+            'type': 'investment',
+            'message': f"{inv.user.phone_number} invested ₵{inv.amount:,.2f}",
+            'time': inv.created_at.strftime("%H:%M, %b %d")
+        })
+    
+    # Sort activities by time (most recent first)
+    recent_activities.sort(key=lambda x: x['time'], reverse=True)
+    recent_activities = recent_activities[:5]
+    
+    # Build referral link
+    referral_link = request.build_absolute_uri(
+        reverse('signup') + f'?ref={referral_code.code}'
+    )
+    
+    context = {
+        'total_team_members': total_team,
+        'active_members': UserReferral.objects.filter(referrer=user, referred_user__is_active=True).count(),
+        'team_volume': team_volume,
+        'team_earnings': team_earnings,
+        'left_team_count': left_team,
+        'right_team_count': right_team,
+        'left_volume': left_volume,
+        'right_volume': right_volume,
+        'weak_leg_volume': weak_leg_volume,
+        'matching_bonus': matching_bonus,
+        'flushed_amount': flushed_amount,
+        'downline_members': downline_members,
+        'recent_activities': recent_activities,
+        'referral_link': referral_link,
+        'referral_code': referral_code.code,
+        'direct_downline': direct_downline,
+        'levels': range(1, 6),  # Show up to level 5
+    }
+    return render(request, 'iCare/services/team.html', context)
+
+
+# @login_required
+# def process_referral_signup(request, referral_code):
+#     """Process user signup with referral code"""
+#     try:
+#         referrer_code = ReferralCode.objects.get(code=referral_code)
+#         referrer = referrer_code.user
+        
+#         # Don't allow self-referral
+#         if referrer == request.user:
+#             return
+        
+#         # Check if user already has a referrer
+#         if hasattr(request.user, 'referred_by'):
+#             return
+        
+#         # Create referral record (Level 1)
+#         UserReferral.objects.create(
+#             referrer=referrer,
+#             referred_user=request.user,
+#             level=1
+#         )
+        
+#         # Process upline referrals (Level 2, 3, etc. up to level 10)
+#         current_referrer = referrer
+#         for level in range(2, 11):
+#             # Check if current referrer has a referrer
+#             try:
+#                 upline_referral = UserReferral.objects.get(referred_user=current_referrer)
+#                 upline_user = upline_referral.referrer
+                
+#                 # Create referral record for this level
+#                 UserReferral.objects.create(
+#                     referrer=upline_user,
+#                     referred_user=request.user,
+#                     level=level
+#                 )
+#                 current_referrer = upline_user
+#             except UserReferral.DoesNotExist:
+#                 break
+        
+#         # Create team member record
+#         # Find available position in referrer's binary tree
+#         position = None
+#         try:
+#             referrer_team = TeamMember.objects.get(user=referrer)
+            
+#             # Check if left position is available
+#             if not referrer_team.left_child:
+#                 position = 'left'
+#                 referrer_team.left_child = request.user
+#             # Check if right position is available
+#             elif not referrer_team.right_child:
+#                 position = 'right'
+#                 referrer_team.right_child = request.user
+#             else:
+#                 # Both positions filled, find next available spot (simple algorithm)
+#                 # You can implement more sophisticated placement logic here
+#                 position = 'left'  # Default to left for now
+            
+#             referrer_team.save()
+#         except TeamMember.DoesNotExist:
+#             pass
+        
+#         # Create team member record for new user
+#         TeamMember.objects.create(
+#             user=request.user,
+#             sponsor=referrer,
+#             position=position
+#         )
+        
+#         # Update volumes
+#         try:
+#             referrer_team = TeamMember.objects.get(user=referrer)
+#             referrer_team.update_volumes()
+#         except TeamMember.DoesNotExist:
+#             pass
+        
+#     except ReferralCode.DoesNotExist:
+#         pass
+
+
+@login_required
+def calculate_referral_commission(request, investment_id):
+    """Calculate commission when a team member invests"""
+    investment = UserInvestment.objects.get(id=investment_id)
+    investor = investment.user
+    
+    # Get the investor's referrer chain
+    referrals = UserReferral.objects.filter(referred_user=investor).order_by('level')
+    
+    for referral in referrals:
+        commission_rate = 0
+        if referral.level == 1:
+            commission_rate = Decimal('0.10')  # 10% for direct referral
+        elif referral.level == 2:
+            commission_rate = Decimal('0.05')  # 5% for level 2
+        elif referral.level == 3:
+            commission_rate = Decimal('0.03')  # 3% for level 3
+        elif referral.level >= 4:
+            commission_rate = Decimal('0.01')  # 1% for level 4+
+        
+        commission_amount = investment.amount * commission_rate
+        
+        if commission_amount > 0:
+            # Create commission record
+            ReferralCommission.objects.create(
+                user=referral.referrer,
+                from_user=investor,
+                amount=commission_amount,
+                commission_type='direct',
+                level=referral.level,
+                description=f"{commission_rate*100}% commission from {investor.phone_number}'s investment of ₵{investment.amount}"
+            )
+            
+            # Add to user's balance
+            user_balance, _ = UserBalance.objects.get_or_create(user=referral.referrer)
+            user_balance.add_balance(commission_amount)
+    
+    # Calculate binary commission
+    try:
+        investor_team = TeamMember.objects.get(user=investor)
+        if investor_team.sponsor:
+            sponsor_team = TeamMember.objects.get(user=investor_team.sponsor)
+            sponsor_team.update_volumes()
+            
+            # Calculate binary commission
+            weak_leg = min(sponsor_team.left_volume, sponsor_team.right_volume)
+            binary_commission = weak_leg * Decimal('0.10')
+            
+            if binary_commission > 0:
+                ReferralCommission.objects.create(
+                    user=investor_team.sponsor,
+                    from_user=investor,
+                    amount=binary_commission,
+                    commission_type='binary',
+                    description=f"Binary commission from {investor.phone_number}'s investment"
+                )
+                
+                user_balance, _ = UserBalance.objects.get_or_create(user=investor_team.sponsor)
+                user_balance.add_balance(binary_commission)
+    except TeamMember.DoesNotExist:
+        pass
+
+
+@login_required
+def member_details(request):
+    """AJAX endpoint to get member details"""
+    member_id = request.GET.get('id')
+    try:
+        member = User.objects.get(id=member_id)
+        team_member = TeamMember.objects.get(user=member)
+        
+        total_investment = UserInvestment.objects.filter(
+            user=member,
+            status='active'
+        ).aggregate(total=models.Sum('amount'))['total'] or 0
+        
+        data = {
+            'id': str(member.id),
+            'name': f"{member.first_name} {member.last_name}".strip() or str(member.phone_number),
+            'phone': str(member.phone_number),
+            'joined_date': member.date_joined.strftime("%b %d, %Y"),
+            'position': team_member.position if team_member.position else 'N/A',
+            'total_investment': f"{float(total_investment):,.2f}",
+            'team_count': UserReferral.objects.filter(referrer=member).count(),
+        }
+        return JsonResponse(data)
+    except (User.DoesNotExist, TeamMember.DoesNotExist):
+        return JsonResponse({'error': 'Member not found'}, status=404)

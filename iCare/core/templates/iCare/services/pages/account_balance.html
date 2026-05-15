@@ -1,27 +1,28 @@
 {% extends "iCare/base.html" %}
 {% load static %}
+{% load humanize %}
 {% block title %}Account & Balance{% endblock %}
 {% block content %}
-<div class="min-h-screen bg-gray-50">
+<div class="min-h-screen">
     <!-- Header -->
-    <div class="fixed w-full top-0 z-40 bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
+    <div class="fixed top-0 left-0 right-0 z-50 max-w-lg mx-auto bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
         <button class="p-2 hover:bg-gray-100 rounded-lg transition" onclick="window.history.back()">
             <svg class="w-6 h-6 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
             </svg>
         </button>
-        <h1 class="text-lg font-semibold text-gray-900">Account</h1>
+        <h1 class="text-lg font-semibold text-gray-900">Account Balance</h1>
         <div class="w-6"></div>
     </div>
 
     <!-- Main Content -->
-    <div class="pt-[65px] pb-6 px-4 space-y-6">
+    <div class="pt-[65px] pb-[70px] pb-6 px-4 space-y-6 max-w-lg mx-auto bg-slate-100">
         
         <!-- Balance Card -->
         <div class="mt-4 bg-gradient-to-br from-blue-600 to-blue-700 rounded-3xl p-6 text-white shadow-lg">
             <div class="text-sm font-medium text-blue-100 mb-2">Account Balance</div>
             <div class="text-4xl font-bold mb-6">
-                GHS {{ user_balance.balance|floatformat:2 }}
+                GHS {{ user_balance.balance|floatformat:2|intcomma }}
             </div>
             <div class="flex gap-3">
                 <a href="{% url 'recharge' %}" class="flex-1 bg-white text-blue-600 font-semibold py-3 rounded-2xl text-center hover:bg-blue-50 transition">
@@ -51,7 +52,7 @@
 
         <!-- User Info Section -->
         <div class="bg-white rounded-3xl p-6 border border-gray-200">
-            <h2 class="text-lg font-semibold text-gray-900 mb-4">Account Information</h2>
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">Profile Information</h2>
             <div class="space-y-4">
                 <div>
                     <div class="text-xs text-gray-500 font-medium mb-1">Phone Number</div>
@@ -78,7 +79,7 @@
                         <div class="flex items-center justify-between py-3 border-b border-gray-100 last:border-b-0">
                             <div class="flex-1">
                                 <div class="font-medium text-gray-900">
-                                    GHS {{ transaction.amount|floatformat:2 }}
+                                    GHS {{ transaction.amount|floatformat:2|intcomma }}
                                 </div>
                                 <div class="text-xs text-gray-500 mt-1">
                                     Ref: {{ transaction.reference }}
@@ -123,4 +124,6 @@
     </div>
 
 </div>
+
+{% include "iCare/partials/footer.html" %}
 {% endblock %}

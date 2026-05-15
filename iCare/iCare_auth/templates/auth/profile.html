@@ -1,28 +1,29 @@
 {% extends "iCare/base.html" %}
 {% load static %}
+{% load humanize %}
 {% block title %}My Profile{% endblock %}
 
 {% block content %}
-<div class="min-h-screen bg-gradient-to-b from-gray-50 to-white pb-8">
+<div class="min-h-screen pb-8">
     
     <!-- Modern Floating Header -->
-    <div class="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-100 px-5 py-3 flex items-center justify-between shadow-sm">
+    <div class="fixed top-0 left-0 right-0 max-w-lg mx-auto z-50 bg-white/80 backdrop-blur-xl border-b border-gray-100 px-5 py-3 flex items-center justify-between shadow-sm">
         <button class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 active:bg-gray-200 transition-all duration-200" onclick="window.history.back()">
             <svg class="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
             </svg>
         </button>
         <h1 class="text-lg font-bold text-gray-900">My Profile</h1>
-        <button id="edit-profile-btn" class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 active:bg-gray-200 transition-all duration-200">
+        <button onclick="openEditModal()" class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 active:bg-gray-200 transition-all duration-200">
             <svg class="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
             </svg>
         </button>
     </div>
 
-    <div class="pt-20 px-5 max-w-lg mx-auto">
+    <div class="pt-20 pb-[70px] px-5 max-w-lg mx-auto bg-slate-100">
         
-        <!-- Success/Error Messages -->
+        <!-- Messages -->
         {% if messages %}
             {% for message in messages %}
             <div class="mb-4 flex items-center gap-3 {% if message.tags == 'success' %}bg-green-50 border-l-4 border-green-500{% else %}bg-red-50 border-l-4 border-red-500{% endif %} rounded-xl p-4 text-sm shadow-sm animate-fade-in">
@@ -41,31 +42,20 @@
         <!-- Profile Header Card -->
         <div class="bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl p-6 shadow-xl shadow-blue-200 mb-6">
             <div class="flex items-center gap-4">
-                <!-- Avatar -->
-                <div class="relative">
-                    <div class="w-20 h-20 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border-3 border-white/50">
-                        {% if user.avatar %}
-                        <img src="{{ user.avatar.url }}" alt="{{ user.get_full_name }}" class="w-20 h-20 rounded-full object-cover">
-                        {% else %}
-                        <span class="text-3xl font-bold text-white">
-                            {{ user.first_name|slice:":1" }}{{ user.last_name|slice:":1" }}
-                        </span>
-                        {% endif %}
-                    </div>
-                    <button id="change-avatar-btn" class="absolute bottom-0 right-0 w-8 h-8 bg-white rounded-full shadow-md flex items-center justify-center hover:bg-gray-50 transition">
-                        <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
-                        </svg>
-                    </button>
+                <div class="w-20 h-20 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border-3 border-white/50">
+                    <span class="text-3xl font-bold text-white">
+                        {{ user.profile.full_name|slice:"1" }}
+                    </span>
                 </div>
-                
-                <!-- User Info -->
                 <div class="flex-1">
-                    <h2 class="text-xl font-bold text-white">{{ user.get_full_name|default:user.phone_number }}</h2>
-                    <div class="flex items-center gap-2 mt-2">
+                    <h2 class="text-xl font-bold text-white">{{ user.get_full_name }}</h2>
+                    <p class="text-blue-100 text-sm mt-1">{{ user.email|default:"No email set" }}</p>
+                    <div class="flex items-center gap-2 mt-2 flex-wrap">
                         <span class="text-xs bg-white/20 rounded-full px-2 py-0.5 text-white">
-                            Member since {{ user.date_joined|date:"M Y" }}
+                            {{ user.phone_number|default:"No phone" }}
+                        </span>
+                        <span class="text-xs bg-white/20 rounded-full px-2 py-0.5 text-white">
+                            Joined {{ user.date_joined|date:"M Y" }}
                         </span>
                     </div>
                 </div>
@@ -74,10 +64,10 @@
 
         <!-- Balance Quick View -->
         <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 mb-6">
-            <div class="flex flex-col gap-2">
+            <div class="flex justify-between items-center">
                 <div>
                     <p class="text-sm text-gray-500 font-medium">Available Balance</p>
-                    <p class="text-2xl font-bold text-gray-900 mt-1">{{ user_balance.currency }} {{ user_balance.balance|floatformat:2 }}</p>
+                    <p class="text-2xl font-bold text-gray-900 mt-1">₵{{ user_balance.balance|floatformat:2|intcomma }}</p>
                 </div>
                 <div class="flex gap-2">
                     <a href="{% url 'recharge' %}" class="px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition shadow-sm">
@@ -90,180 +80,183 @@
             </div>
         </div>
 
-        <!-- Profile Information Form (View Mode) -->
-        <div id="view-mode" class="space-y-6">
-            <!-- Personal Information Section -->
-            <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-base font-semibold text-gray-900">Personal Information</h3>
-                    <button class="edit-section-btn text-blue-600 text-sm font-medium hover:text-blue-700" data-section="personal">
-                        Edit
-                    </button>
-                </div>
-                
-                <div class="space-y-3">
-                    <div class="flex justify-between py-2 border-b border-gray-100">
-                        <span class="text-sm text-gray-500">Full Name</span>
-                        <span class="text-sm font-medium text-gray-900">{{ user.get_full_name|default:"Not set" }}</span>
-                    </div>
-                    <div class="flex justify-between py-2 border-b border-gray-100">
-                        <span class="text-sm text-gray-500">Phone Number</span>
-                        <span class="text-sm font-medium text-gray-900">{{ user.phone_number }}</span>
-                    </div>
-                    <div class="flex justify-between py-2 border-b border-gray-100">
-                        <span class="text-sm text-gray-500">Email Address</span>
-                        <span class="text-sm font-medium text-gray-900">{{ user.email|default:"Not set" }}</span>
-                    </div>
-                    <div class="flex justify-between py-2">
-                        <span class="text-sm text-gray-500">Date of Birth</span>
-                        <span class="text-sm font-medium text-gray-900">{{ user.date_of_birth|date:"M d, Y"|default:"Not set" }}</span>
-                    </div>
-                </div>
+        <!-- Saved Accounts Section -->
+        <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 mb-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-base font-semibold text-gray-900">Saved Payment Methods</h3>
+                <button onclick="showAddAccountModal()" class="text-blue-600 text-sm font-medium hover:text-blue-700">
+                    + Add New
+                </button>
             </div>
-
-            <!-- Security Section -->
-            <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-base font-semibold text-gray-900">Security</h3>
-                    <button class="edit-section-btn text-blue-600 text-sm font-medium hover:text-blue-700" data-section="security">
-                        Change
-                    </button>
-                </div>
-                
+            
+            {% if saved_accounts %}
                 <div class="space-y-3">
-                    <div class="flex justify-between py-2 border-b border-gray-100">
-                        <span class="text-sm text-gray-500">Password</span>
-                        <span class="text-sm text-gray-900">••••••••</span>
-                    </div>
-                    <div class="flex justify-between py-2">
-                        <span class="text-sm text-gray-500">Two-Factor Authentication</span>
-                        <span class="text-sm {% if user.two_factor_enabled %}text-green-600{% else %}text-gray-500{% endif %}">
-                            {% if user.two_factor_enabled %}Enabled{% else %}Disabled{% endif %}
-                        </span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Bank/Mobile Money Accounts Section -->
-            <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-base font-semibold text-gray-900">Saved Accounts</h3>
-                    <button class="add-account-btn text-blue-600 text-sm font-medium hover:text-blue-700">
-                        + Add New
-                    </button>
-                </div>
-                
-                {% if saved_accounts %}
-                    <div class="space-y-3">
-                        {% for account in saved_accounts %}
-                        <div class="p-3 bg-gray-50 rounded-xl border border-gray-200">
-                            <div class="flex justify-between items-start">
-                                <div>
-                                    <div class="flex items-center gap-2">
-                                        {% if account.account_type == 'mobile_money' %}
-                                        <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    {% for account in saved_accounts %}
+                    <div class="p-4 bg-gray-50 rounded-xl border {% if account.is_default %}border-blue-400 bg-blue-50/30{% else %}border-gray-200{% endif %}">
+                        <div class="flex justify-between items-start">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-2">
+                                    {% if account.account_type == 'mobile_money' %}
+                                        <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
                                         </svg>
-                                        {% else %}
-                                        <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    {% else %}
+                                        <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
                                         </svg>
-                                        {% endif %}
-                                        <span class="text-sm font-medium text-gray-900">
-                                            {{ account.get_account_type_display }}
-                                        </span>
-                                    </div>
-                                    <p class="text-xs text-gray-500 mt-1">
+                                    {% endif %}
+                                    <span class="text-sm font-medium text-gray-900">
                                         {% if account.account_type == 'mobile_money' %}
-                                            {{ account.network|upper }} • +233{{ account.phone_number }}
+                                            Mobile Money - {{ account.get_network_display }}
                                         {% else %}
-                                            {{ account.bank_name }} • {{ account.account_number|slice:"-4" }}
+                                            Bank Transfer - {{ account.bank_name }}
                                         {% endif %}
-                                    </p>
+                                    </span>
+                                    {% if account.is_default %}
+                                        <span class="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">Default</span>
+                                    {% endif %}
                                 </div>
-                                <button class="delete-account-btn text-red-500 hover:text-red-700" data-id="{{ account.id }}">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                                    </svg>
-                                </button>
+                                <p class="text-xs text-gray-500 mt-1">
+                                    {% if account.account_type == 'mobile_money' %}
+                                        📱 {{ account.phone_number }}
+                                    {% else %}
+                                        🏦 Account: {{ account.account_number }}<br>
+                                        👤 {{ account.account_name }}
+                                    {% endif %}
+                                </p>
+                            </div>
+                            <div class="flex gap-2">
+                                {% if not account.is_default %}
+                                <form method="post" action="{% url 'set_default_account' account.id %}" class="inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="text-xs text-blue-600 hover:text-blue-700" title="Set as default">
+                                        Set Default
+                                    </button>
+                                </form>
+                                {% endif %}
+                                <form method="post" action="{% url 'delete_saved_account' account.id %}" class="inline" onsubmit="return confirm('Remove this saved account?')">
+                                    {% csrf_token %}
+                                    <button type="submit" class="text-red-500 hover:text-red-700" title="Remove">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                        </svg>
+                                    </button>
+                                </form>
                             </div>
                         </div>
-                        {% endfor %}
                     </div>
-                {% else %}
-                    <p class="text-sm text-gray-500 text-center py-4">No saved accounts yet</p>
-                {% endif %}
-            </div>
-
-            <!-- Preferences Section -->
-            <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-                <h3 class="text-base font-semibold text-gray-900 mb-4">Preferences</h3>
-                
-                <div class="space-y-3">
-                    <label class="flex items-center justify-between cursor-pointer">
-                        <span class="text-sm text-gray-700">Email Notifications</span>
-                        <div class="relative">
-                            <input type="checkbox" id="email-notif" class="sr-only peer" {% if user.email_notifications %}checked{% endif %}>
-                            <div class="w-10 h-5 bg-gray-300 rounded-full peer peer-checked:bg-blue-600 transition"></div>
-                            <div class="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full transition peer-checked:translate-x-5"></div>
-                        </div>
-                    </label>
-                    
-                    <label class="flex items-center justify-between cursor-pointer">
-                        <span class="text-sm text-gray-700">SMS Alerts</span>
-                        <div class="relative">
-                            <input type="checkbox" id="sms-notif" class="sr-only peer" {% if user.sms_notifications %}checked{% endif %}>
-                            <div class="w-10 h-5 bg-gray-300 rounded-full peer peer-checked:bg-blue-600 transition"></div>
-                            <div class="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full transition peer-checked:translate-x-5"></div>
-                        </div>
-                    </label>
+                    {% endfor %}
                 </div>
+            {% else %}
+                <div class="text-center py-6">
+                    <svg class="w-12 h-12 mx-auto text-gray-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                    </svg>
+                    <p class="text-sm text-gray-500">No saved payment methods</p>
+                    <p class="text-xs text-gray-400 mt-1">Add a mobile money or bank account for faster withdrawals</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Quick Links -->
+        <div class="space-y-3">
+
+             <div class="grid grid-cols-2 gap-3 mb-6">
+                <a href="{% url 'saved_payment_methods' %}" class="flex items-center justify-center gap-2 p-3 bg-white rounded-xl border border-gray-100 hover:shadow-sm transition group">
+                    <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                    </svg>
+                    <span class="text-sm font-medium text-gray-700">Payment Methods</span>
+                </a>
+                <a href="{% url 'account' %}" class="flex items-center justify-center gap-2 p-3 bg-white rounded-xl border border-gray-100 hover:shadow-sm transition group">
+                    <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <span class="text-sm font-medium text-gray-700">Balance Details</span>
+                </a>
             </div>
 
-            <!-- Account Actions -->
-            <div class="space-y-3">
-                <a href="{% url 'recharge_records' %}" class="flex items-center justify-between p-4 bg-white rounded-xl border border-gray-100 hover:shadow-sm transition">
-                    <div class="flex items-center gap-3">
-                        <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                            <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                            </svg>
-                        </div>
-                        <div>
-                            <p class="text-sm font-medium text-gray-900">Recharge History</p>
-                            <p class="text-xs text-gray-500">View all your deposits</p>
-                        </div>
+            <a href="{% url 'recharge_records' %}" class="flex items-center justify-between p-4 bg-white rounded-xl border border-gray-100 hover:shadow-sm transition">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                        <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
                     </div>
-                    <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                    </svg>
-                </a>
-                
-                <a href="{% url 'withdrawal_records' %}" class="flex items-center justify-between p-4 bg-white rounded-xl border border-gray-100 hover:shadow-sm transition">
-                    <div class="flex items-center gap-3">
-                        <div class="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
-                            <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2z"/>
-                            </svg>
-                        </div>
-                        <div>
-                            <p class="text-sm font-medium text-gray-900">Withdrawal History</p>
-                            <p class="text-xs text-gray-500">Track your withdrawals</p>
-                        </div>
+                    <div>
+                        <p class="text-sm font-medium text-gray-900">Recharge History</p>
+                        <p class="text-xs text-gray-500">View all your deposits</p>
                     </div>
-                    <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                    </svg>
-                </a>
-                
-                <a href="{% url "logout" %}" class="flex items-center justify-between p-4 bg-white rounded-xl border border-red-100 hover:bg-red-50 transition w-full">
+                </div>
+                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+            </a>
+            
+            <a href="{% url 'withdrawal_records' %}" class="flex items-center justify-between p-4 bg-white rounded-xl border border-gray-100 hover:shadow-sm transition">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
+                        <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-gray-900">Withdrawal History</p>
+                        <p class="text-xs text-gray-500">Track your withdrawals</p>
+                    </div>
+                </div>
+                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+            </a>
+            
+            <a href="{% url 'product' %}" class="flex items-center justify-between p-4 bg-white rounded-xl border border-gray-100 hover:shadow-sm transition">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                        <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-gray-900">Investment Plans</p>
+                        <p class="text-xs text-gray-500">Explore earning opportunities</p>
+                    </div>
+                </div>
+                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+            </a>
+
+            <button onclick="openPasswordModal()" class="flex items-center justify-between p-4 bg-white rounded-xl border border-gray-100 hover:shadow-sm transition w-full">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center">
+                        <svg class="w-4 h-4 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                        </svg>
+                    </div>
+                    <div class="text-start">
+                        <p class="text-sm font-medium text-gray-900">Change Password</p>
+                        <p class="text-xs text-gray-500">Update your account password</p>
+                    </div>
+                </div>
+                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Logout Button -->
+        <div class="mt-6">
+            <form method="post" action="{% url 'logout' %}">
+                {% csrf_token %}
+                <button type="submit" class="flex items-center justify-between p-4 bg-white rounded-xl border border-red-100 hover:bg-red-50 transition w-full">
                     <div class="flex items-center gap-3">
                         <div class="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
                             <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
                             </svg>
                         </div>
-                        <div>
+                        <div class="text-start">
                             <p class="text-sm font-medium text-red-600">Log Out</p>
                             <p class="text-xs text-gray-500">Sign out of your account</p>
                         </div>
@@ -271,204 +264,354 @@
                     <svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7"/>
                     </svg>
-                </a>
-            </div>
+                </button>
+            </form>
         </div>
+    </div>
+</div>
 
-        <!-- Edit Mode Forms (Hidden by default) -->
-        <div id="edit-mode" class="hidden space-y-6">
-            <!-- Edit Personal Info Form -->
-            <form id="personal-form" method="post" action="" class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+<!-- Add Account Modal -->
+<div id="add-account-modal" class="fixed inset-0 z-50 hidden items-center justify-center px-4">
+    <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="closeAddAccountModal()"></div>
+    <div class="relative bg-white rounded-2xl max-w-md w-full max-h-[85vh] overflow-y-auto animate-fade-in-up">
+        <div class="sticky top-0 bg-white border-b border-gray-100 px-5 py-4 flex justify-between items-center">
+            <h3 class="text-lg font-bold text-gray-900">Add Payment Method</h3>
+            <button onclick="closeAddAccountModal()" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
+                <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        
+        <div class="p-5">
+            <div class="flex gap-3 mb-5">
+                <button onclick="selectAccountType('mobile_money')" id="mobile-money-tab" class="flex-1 py-2 px-4 rounded-xl text-sm font-medium bg-blue-600 text-white transition">
+                    Mobile Money
+                </button>
+                <button onclick="selectAccountType('bank_transfer')" id="bank-transfer-tab" class="flex-1 py-2 px-4 rounded-xl text-sm font-medium bg-gray-100 text-gray-700 transition">
+                    Bank Transfer
+                </button>
+            </div>
+            
+            <!-- Mobile Money Form -->
+            <form id="mobile-money-form" method="post" action="{% url 'add_saved_account' %}">
                 {% csrf_token %}
-                <h3 class="text-base font-semibold text-gray-900 mb-4">Edit Personal Information</h3>
+                <input type="hidden" name="account_type" value="mobile_money">
                 <div class="space-y-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
-                        <input type="text" name="full_name" value="{{ profile.full_name }}" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Network Provider</label>
+                        <select name="network" required class="w-full px-4 py-3 text-slate-600 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-blue-400">
+                            <option value="">Select network</option>
+                            <option value="mtn">MTN Mobile Money</option>
+                            <option value="vodafone">Vodafone Cash</option>
+                            <option value="airteltigo">AirtelTigo Money</option>
+                        </select>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
-                        <input type="email" name="email" value="{{ profile.email }}" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+                        <div class="flex items-center gap-2 bg-gray-50 rounded-xl px-4 py-3 border border-gray-200">
+                            <span class="text-gray-500">+233</span>
+                            <input type="tel" name="phone_number" placeholder="XX XXX XXXX" required
+                                class="w-full bg-transparent outline-none text-gray-900">
+                        </div>
+                        <p class="text-xs text-gray-400 mt-1">Enter phone number without country code</p>
                     </div>
-                    <!--address-->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Address</label>
-                        <input type="text" name="address" value="{{ profile.address }}" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Date of Birth</label>
-                        <input type="date" name="date_of_birth" value="{{ profile.date_of_birth|date:'Y-m-d' }}" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100">
-                    </div>
-
                 </div>
                 <div class="flex gap-3 mt-6">
-                    <button type="submit" class="flex-1 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition">Save Changes</button>
-                    <button type="button" class="cancel-edit-btn flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition">Cancel</button>
+                    <button type="button" onclick="closeAddAccountModal()" class="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium">Cancel</button>
+                    <button type="submit" class="flex-1 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700">Save Account</button>
                 </div>
             </form>
-
-            <!-- Change Password Form -->
-            <form id="security-form" method="post" action="" class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hidden">
+            
+            <!-- Bank Transfer Form -->
+            <form id="bank-transfer-form" method="post" action="{% url 'add_saved_account' %}" class="hidden">
                 {% csrf_token %}
-                <h3 class="text-base font-semibold text-gray-900 mb-4">Change Password</h3>
+                <input type="hidden" name="account_type" value="bank_transfer">
                 <div class="space-y-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Current Password</label>
-                        <input type="password" name="current_password" required class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Bank Name</label>
+                        <select name="bank_name" required class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-blue-400">
+                            <option value="">Select bank</option>
+                            <option value="Ghana Commercial Bank">Ghana Commercial Bank</option>
+                            <option value="Ecobank">Ecobank</option>
+                            <option value="Access Bank">Access Bank</option>
+                            <option value="Stanbic Bank">Stanbic Bank</option>
+                            <option value="Standard Chartered">Standard Chartered</option>
+                            <option value="Absa Bank">Absa Bank</option>
+                            <option value="Fidelity Bank">Fidelity Bank</option>
+                            <option value="First National Bank">First National Bank</option>
+                            <option value="Universal Merchant Bank">Universal Merchant Bank</option>
+                        </select>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">New Password</label>
-                        <input type="password" name="new_password" required class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Account Number</label>
+                        <input type="text" name="account_number" placeholder="Enter account number" required
+                            class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-blue-400">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Confirm New Password</label>
-                        <input type="password" name="confirm_password" required class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Account Holder Name</label>
+                        <input type="text" name="account_name" placeholder="Full name on account" required
+                            class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-blue-400">
                     </div>
                 </div>
                 <div class="flex gap-3 mt-6">
-                    <button type="submit" class="flex-1 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition">Update Password</button>
-                    <button type="button" class="cancel-edit-btn flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition">Cancel</button>
+                    <button type="button" onclick="closeAddAccountModal()" class="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium">Cancel</button>
+                    <button type="submit" class="flex-1 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700">Save Account</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
 
+<!-- Edit Profile Modal -->
+<div id="edit-profile-modal" class="fixed inset-0 z-50 hidden items-center justify-center px-4">
+    <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="closeEditModal()"></div>
+    <div class="relative bg-white rounded-xl max-w-md w-full max-h-[75vh] flex flex-col animate-fade-in-up">
+        
+        <div class="flex-shrink-0 border-b border-gray-100 px-5 py-4 flex justify-between items-center">
+            <h3 class="text-lg font-bold text-gray-900">Edit Profile</h3>
+            <button onclick="closeEditModal()" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition">
+                <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        
+        <form id="edit-profile-form" method="post" action="{% url 'update_profile' %}" class="flex-1 overflow-y-auto rounded-xl">
+            {% csrf_token %}
+            <div class="p-5 space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+                    {{ profile_form.full_name }}
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
+                    {{ profile_form.email }}
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+                    <input type="tel" value="{{ user.phone_number }}" 
+                           class="w-full px-4 py-3 text-slate-600 bg-gray-100 border border-gray-200 rounded-xl cursor-not-allowed" 
+                           readonly disabled>
+                    <p class="text-xs text-gray-400 mt-1">Phone number cannot be changed</p>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Date of Birth</label>
+                    {{ profile_form.date_of_birth }}
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Address</label>
+                    {{ profile_form.address }}
+                </div>
+            </div>
+            
+            <div class="flex-shrink-0 border-t border-gray-100 bg-white rounded-b-2xl">
+                <div class="p-5" style="padding-bottom: max(1.25rem, env(safe-area-inset-bottom, 1.25rem));">
+                    <div class="flex gap-3">
+                        <button type="button" onclick="closeEditModal()" class="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition">
+                            Cancel
+                        </button>
+                        <button type="submit" class="flex-1 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-medium hover:from-blue-700 hover:to-blue-800 transition shadow-md">
+                            Save Changes
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Change Password Modal -->
+<div id="change-password-modal" class="fixed inset-0 z-50 hidden items-center justify-center px-4">
+    <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="closePasswordModal()"></div>
+    <div class="relative bg-white rounded-2xl max-w-md w-full max-h-[90vh] flex flex-col animate-fade-in-up">
+        
+        <div class="flex-shrink-0 border-b border-gray-100 px-5 py-4 flex justify-between items-center">
+            <h3 class="text-lg font-bold text-gray-900">Change Password</h3>
+            <button onclick="closePasswordModal()" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition">
+                <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        
+        <form id="change-password-form" method="post" action="{% url 'change_password' %}" class="flex-1 overflow-y-auto">
+            {% csrf_token %}
+            <div class="p-5 space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Current Password</label>
+                    {{ password_form.old_password }}
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">New Password</label>
+                    {{ password_form.new_password1 }}
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Confirm New Password</label>
+                    {{ password_form.new_password2 }}
+                </div>
+            </div>
+            
+            <div class="flex-shrink-0 border-t border-gray-100 bg-white rounded-b-2xl">
+                <div class="p-5" style="padding-bottom: max(1.25rem, env(safe-area-inset-bottom, 1.25rem));">
+                    <div class="flex gap-3">
+                        <button type="button" onclick="closePasswordModal()" class="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition">
+                            Cancel
+                        </button>
+                        <button type="submit" class="flex-1 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-medium hover:from-blue-700 hover:to-blue-800 transition shadow-md">
+                            Update Password
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
 <style>
     @keyframes fadeIn {
-        from {
-            opacity: 0;
-            transform: translateY(-10px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
     }
-    
-    .animate-fade-in {
-        animation: fadeIn 0.5s ease-out;
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
     }
+    .animate-fade-in { animation: fadeIn 0.5s ease-out; }
+    .animate-fade-in-up { animation: fadeInUp 0.3s ease-out; }
 </style>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const viewMode = document.getElementById('view-mode');
-        const editMode = document.getElementById('edit-mode');
-        const editProfileBtn = document.getElementById('edit-profile-btn');
-        const personalForm = document.getElementById('personal-form');
-        const securityForm = document.getElementById('security-form');
-        const cancelBtns = document.querySelectorAll('.cancel-edit-btn');
-        const editSectionBtns = document.querySelectorAll('.edit-section-btn');
-        
-        // Show edit mode for specific section
-        editSectionBtns.forEach(btn => {
-            btn.addEventListener('click', function() {
-                const section = this.dataset.section;
-                viewMode.classList.add('hidden');
-                editMode.classList.remove('hidden');
-                
-                if (section === 'personal') {
-                    personalForm.classList.remove('hidden');
-                    securityForm.classList.add('hidden');
-                } else if (section === 'security') {
-                    personalForm.classList.add('hidden');
-                    securityForm.classList.remove('hidden');
-                }
-            });
+    // message auto-dismiss
+   setTimeout(() => {
+        document.querySelectorAll('.animate-fade-in').forEach(el => {
+            el.classList.add('opacity-0', 'transition-opacity', 'duration-500');
+            setTimeout(() => el.remove(), 500);
         });
+    }, 5000);
+
+
+    function showAddAccountModal() {
+        document.getElementById('add-account-modal').classList.remove('hidden');
+        document.getElementById('add-account-modal').classList.add('flex');
+    }
+    
+    function closeAddAccountModal() {
+        document.getElementById('add-account-modal').classList.add('hidden');
+        document.getElementById('add-account-modal').classList.remove('flex');
+    }
+    
+    function selectAccountType(type) {
+        const mobileForm = document.getElementById('mobile-money-form');
+        const bankForm = document.getElementById('bank-transfer-form');
+        const mobileTab = document.getElementById('mobile-money-tab');
+        const bankTab = document.getElementById('bank-transfer-tab');
         
-        // Global edit button
-        if (editProfileBtn) {
-            editProfileBtn.addEventListener('click', function() {
-                viewMode.classList.add('hidden');
-                editMode.classList.remove('hidden');
-                personalForm.classList.remove('hidden');
-                securityForm.classList.add('hidden');
-            });
+        if (type === 'mobile_money') {
+            mobileForm.classList.remove('hidden');
+            bankForm.classList.add('hidden');
+            mobileTab.classList.add('bg-blue-600', 'text-white');
+            mobileTab.classList.remove('bg-gray-100', 'text-gray-700');
+            bankTab.classList.add('bg-gray-100', 'text-gray-700');
+            bankTab.classList.remove('bg-blue-600', 'text-white');
+        } else {
+            mobileForm.classList.add('hidden');
+            bankForm.classList.remove('hidden');
+            bankTab.classList.add('bg-blue-600', 'text-white');
+            bankTab.classList.remove('bg-gray-100', 'text-gray-700');
+            mobileTab.classList.add('bg-gray-100', 'text-gray-700');
+            mobileTab.classList.remove('bg-blue-600', 'text-white');
+        }
+    }
+    
+    // Close modal when clicking outside
+    document.getElementById('add-account-modal')?.addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeAddAccountModal();
+        }
+    });
+
+    // Edit Profile Modal Functions
+    function openEditModal() {
+        const modal = document.getElementById('edit-profile-modal');
+        if (modal) {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            document.body.style.overflow = 'hidden'; // Prevent background scrolling
+        }
+    }
+    
+    function closeEditModal() {
+        const modal = document.getElementById('edit-profile-modal');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            document.body.style.overflow = ''; // Restore scrolling
+        }
+    }
+    
+    function submitEditForm() {
+        const form = document.getElementById('edit-profile-form');
+        if (form) {
+            form.submit();
+        }
+    }
+    
+    // Change Password Modal Functions
+    function openPasswordModal() {
+        const modal = document.getElementById('change-password-modal');
+        if (modal) {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            document.body.style.overflow = 'hidden';
+        }
+    }
+    
+    function closePasswordModal() {
+        const modal = document.getElementById('change-password-modal');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            document.body.style.overflow = '';
+        }
+    }
+    
+    function submitPasswordForm() {
+        const form = document.getElementById('change-password-form');
+        const newPassword = form.querySelector('input[name="new_password"]').value;
+        const confirmPassword = form.querySelector('input[name="confirm_password"]').value;
+        
+        if (newPassword !== confirmPassword) {
+            alert('New passwords do not match!');
+            return;
         }
         
-        // Cancel edit
-        cancelBtns.forEach(btn => {
-            btn.addEventListener('click', function() {
-                viewMode.classList.remove('hidden');
-                editMode.classList.add('hidden');
-            });
-        });
-        
-        // Logout confirmation
-        const logoutBtn = document.getElementById('logout-btn');
-        if (logoutBtn) {
-            logoutBtn.addEventListener('click', function(e) {
-                e.preventDefault();
-                if (confirm('Are you sure you want to log out?')) {
-                    window.location.href = '{% url "logout" %}';
-                }
-            });
+        if (newPassword.length < 6) {
+            alert('Password must be at least 6 characters long');
+            return;
         }
         
-        // Notification toggles
-        const emailNotif = document.getElementById('email-notif');
-        const smsNotif = document.getElementById('sms-notif');
-        
-        if (emailNotif) {
-            emailNotif.addEventListener('change', function() {
-                fetch('', {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRFToken': getCookie('csrftoken'),
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ email_notifications: this.checked })
-                });
-            });
+        form.submit();
+    }
+    
+    // Close modal when clicking outside
+    document.getElementById('edit-profile-modal')?.addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeEditModal();
         }
-        
-        if (smsNotif) {
-            smsNotif.addEventListener('change', function() {
-                fetch('', {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRFToken': getCookie('csrftoken'),
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ sms_notifications: this.checked })
-                });
-            });
-        }
-        
-        // Delete saved account
-        const deleteAccountBtns = document.querySelectorAll('.delete-account-btn');
-        deleteAccountBtns.forEach(btn => {
-            btn.addEventListener('click', function(e) {
-                e.preventDefault();
-                if (confirm('Remove this saved account?')) {
-                    const accountId = this.dataset.id;
-                    fetch(`/account/delete/${accountId}/`, {
-                        method: 'POST',
-                        headers: {
-                            'X-CSRFToken': getCookie('csrftoken'),
-                        },
-                    }).then(() => location.reload());
-                }
-            });
-        });
     });
     
-    function getCookie(name) {
-        let cookieValue = null;
-        if (document.cookie && document.cookie !== '') {
-            const cookies = document.cookie.split(';');
-            for (let i = 0; i < cookies.length; i++) {
-                const cookie = cookies[i].trim();
-                if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                    break;
-                }
-            }
+    document.getElementById('change-password-modal')?.addEventListener('click', function(e) {
+        if (e.target === this) {
+            closePasswordModal();
         }
-        return cookieValue;
-    }
+    });
 </script>
 
 {% include "iCare/partials/footer.html" %}

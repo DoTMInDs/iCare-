@@ -1,12 +1,13 @@
 {% extends "iCare/base.html" %}
 {% load static %}
+{% load humanize %}
 {% block title %}Recharge Wallet{% endblock %}
 
 {% block content %}
-<div class="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+<div class="min-h-screen">
     
     <!-- Modern Header with floating effect -->
-    <div class="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-100 px-5 py-3 flex items-center justify-between shadow-sm">
+    <div class="fixed top-0 left-0 right-0 z-50 max-w-lg mx-auto bg-white/80 backdrop-blur-xl border-b border-gray-100 px-5 py-3 flex items-center justify-between shadow-sm">
         <button class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 active:bg-gray-200 transition-all duration-200" onclick="window.history.back()">
             <svg class="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
@@ -20,12 +21,28 @@
         </a>
     </div>
 
-    <main class="pt-20 pb-8 px-5 max-w-lg mx-auto">
+    <main class="pt-20 pb-[70px] pb-8 px-5 max-w-lg mx-auto bg-slate-100">
+
+        <!-- Success/Error Messages -->
+        {% if messages %}
+            {% for message in messages %}
+            <div class="mb-4 flex items-center gap-3 {% if message.tags == 'success' %}bg-green-50 border-l-4 border-green-500{% else %}bg-red-50 border-l-4 border-red-500{% endif %} rounded-xl p-4 text-sm shadow-sm animate-fade-in">
+                <svg class="w-5 h-5 {% if message.tags == 'success' %}text-green-500{% else %}text-red-500{% endif %} flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    {% if message.tags == 'success' %}
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    {% else %}
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    {% endif %}
+                </svg>
+                <span class="{% if message.tags == 'success' %}text-green-800{% else %}text-red-800{% endif %}">{{ message }}</span>
+            </div>
+            {% endfor %}
+        {% endif %}
         
-        <!-- Hero / Featured Banner - sleek modern gradient -->
+        <!-- Hero / Featured Banner -->
         <div class="mb-6 rounded-2xl overflow-hidden shadow-lg">
             <div class="relative">
-                <img src="https://a-studioaa.com/assets/recharge-banner-CLe6Gr_4.jpg" alt="recharge offer" class="w-full h-36 object-cover">
+                <img src="{% static "imgs/home-banner-DBi9Nn6u.jpg" %}" alt="recharge offer" class="w-full h-36 object-cover">
                 <div class="absolute inset-0 bg-gradient-to-r from-black/20 to-transparent"></div>
             </div>
         </div>
@@ -35,7 +52,7 @@
             <input id="amount-input" type="hidden" name="amount" value="{{ selected_amount }}">
             <input id="payment-method-input" type="hidden" name="payment_method" value="{{ selected_payment }}">
 
-            <!-- Alert messages with modern design -->
+            <!-- Alert messages -->
             {% if error %}
             <div class="flex items-center gap-3 bg-red-50 border-l-4 border-red-500 rounded-xl p-4 text-sm text-red-800 shadow-sm">
                 <svg class="w-5 h-5 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
@@ -61,13 +78,13 @@
                     <button type="button" data-amount="{{ amount }}" 
                         class="amount-option py-3 rounded-2xl text-base font-semibold transition-all duration-200 
                         {% if selected_amount == amount|stringformat:"s" %}bg-blue-600 text-white shadow-md shadow-blue-200 scale-[1.02]{% else %}bg-gray-100 text-gray-800 hover:bg-gray-200{% endif %}">
-                        {{ amount }}
+                        ₵{{ amount|intcomma }}
                     </button>
                     {% endfor %}
                 </div>
             </div>
 
-            <!-- Custom amount with elegant input -->
+            <!-- Custom amount input -->
             <div class="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
                 <label class="block text-sm font-medium text-gray-700 mb-2">Custom amount (GHS)</label>
                 <div class="flex items-center gap-2 bg-gray-50 rounded-xl px-4 py-3 border border-gray-200 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100 transition">
@@ -79,41 +96,104 @@
                 <p class="text-xs text-gray-400 mt-2">Minimum recharge: <span class="font-medium">GHS 100</span></p>
             </div>
 
-            <!-- Payment methods: modern cards with interactive states -->
+            <!-- Payment Methods Section -->
             <div>
-                <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Select payment method</h2>
+                <div class="flex justify-between items-center mb-3">
+                    <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide">Payment method</h2>
+                    <a href="{% url 'saved_payment_methods' %}" class="text-xs text-blue-600 font-medium flex items-center gap-1">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        </svg>
+                        Add new
+                    </a>
+                </div>
+                
                 <div class="space-y-3">
-                    <button type="button" data-method="GHS 1" 
+                    <!-- Default Paystack payment option -->
+                    <button type="button" data-method="paystack_card" 
                         class="payment-card w-full p-4 rounded-2xl text-left transition-all duration-200 border 
-                        {% if selected_payment == 'GHS 1' %}border-blue-500 bg-blue-50/70 ring-2 ring-blue-200{% else %}border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm{% endif %}">
+                        {% if selected_payment == 'paystack_card' %}border-blue-500 bg-blue-50/70 ring-2 ring-blue-200{% else %}border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm{% endif %}">
                         <div class="flex items-center justify-between">
                             <div class="flex items-center gap-4">
                                 <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-sm">
-                                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+                                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                                    </svg>
                                 </div>
                                 <div>
-                                    <p class="font-semibold text-gray-900">Deposit GHS 1 (test gateway)</p>
-                                    <p class="text-xs text-gray-500">Instant confirmation</p>
+                                    <p class="font-semibold text-gray-900">Card Payment</p>
+                                    <p class="text-xs text-gray-500">Visa, Mastercard, Mobile Money via Paystack</p>
                                 </div>
                             </div>
                             <div class="w-6 h-6 rounded-full border-2 flex items-center justify-center 
-                                {% if selected_payment == 'GHS 1' %}border-blue-500 bg-blue-500{% else %}border-gray-300{% endif %}">
-                                {% if selected_payment == 'GHS 1' %}
+                                {% if selected_payment == 'paystack_card' %}border-blue-500 bg-blue-500{% else %}border-gray-300{% endif %}">
+                                {% if selected_payment == 'paystack_card' %}
                                 <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg>
                                 {% endif %}
                             </div>
                         </div>
                     </button>
-                    <!-- you can uncomment more methods if needed, but keeping minimal -->
+
+                    <!-- Saved Payment Methods from Profile -->
+                    {% if saved_accounts %}
+                        {% for account in saved_accounts %}
+                        <button type="button" data-method="{{ account.id }}" data-account-type="{{ account.account_type }}"
+                            class="payment-card w-full p-4 rounded-2xl text-left transition-all duration-200 border 
+                            {% if selected_payment|stringformat:"s" == account.id|stringformat:"s" %}border-blue-500 bg-blue-50/70 ring-2 ring-blue-200{% else %}border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm{% endif %}">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-4">
+                                    {% if account.account_type == 'mobile_money' %}
+                                        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center shadow-sm">
+                                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                                            </svg>
+                                        </div>
+                                    {% else %}
+                                        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center shadow-sm">
+                                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                                            </svg>
+                                        </div>
+                                    {% endif %}
+                                    <div>
+                                        <p class="font-semibold text-gray-900">
+                                            {% if account.account_type == 'mobile_money' %}
+                                                {{ account.get_network_display }}
+                                            {% else %}
+                                                {{ account.bank_name }}
+                                            {% endif %}
+                                            {% if account.is_default %}
+                                                <span class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full ml-2">Default</span>
+                                            {% endif %}
+                                        </p>
+                                        <p class="text-xs text-gray-500">
+                                            {% if account.account_type == 'mobile_money' %}
+                                                {{ account.phone_number }}
+                                            {% else %}
+                                                {{ account.account_number }}
+                                            {% endif %}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="w-6 h-6 rounded-full border-2 flex items-center justify-center 
+                                    {% if selected_payment|stringformat:"s" == account.id|stringformat:"s" %}border-blue-500 bg-blue-500{% else %}border-gray-300{% endif %}">
+                                    {% if selected_payment|stringformat:"s" == account.id|stringformat:"s" %}
+                                    <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </button>
+                        {% endfor %}
+                    {% endif %}
                 </div>
             </div>
 
-            <!-- CTA Button with modern gradient -->
+            <!-- CTA Button -->
             <button type="submit" class="w-full py-4 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold rounded-2xl transition-all duration-300 shadow-lg shadow-blue-200 active:scale-[0.98]">
                 Confirm & proceed
             </button>
 
-            <!-- Important notes - redesigned as clean cards -->
+            <!-- Important notes -->
             <div class="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm mt-4">
                 <div class="flex items-start gap-3">
                     <svg class="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
@@ -131,7 +211,6 @@
 </div>
 
 <style>
-    /* hide scrollbar for carousel if needed later, but preserve modern look */
     .scrollbar-hide::-webkit-scrollbar {
         display: none;
     }
@@ -139,7 +218,6 @@
         -ms-overflow-style: none;
         scrollbar-width: none;
     }
-    /* smooth interactions */
     button, .amount-option, .payment-card {
         cursor: pointer;
     }
@@ -157,7 +235,7 @@
         const paymentButtons = document.querySelectorAll('.payment-card');
         const paymentMethodInput = document.getElementById('payment-method-input');
 
-        // --- AMOUNT PRESET LOGIC ---
+        // Amount preset logic
         function updateAmountSelection(selectedElement, amountValue) {
             amountInput.value = amountValue;
             customAmountField.value = amountValue;
@@ -177,7 +255,7 @@
             });
         });
 
-        // custom amount input sync
+        // Custom amount input sync
         customAmountField.addEventListener('input', function () {
             let rawValue = this.value.trim();
             if (rawValue === "") {
@@ -190,14 +268,13 @@
                     amountInput.value = rawValue;
                 }
             }
-            // remove active style from preset buttons
             amountOptions.forEach(btn => {
                 btn.classList.remove('bg-blue-600', 'text-white', 'shadow-md', 'shadow-blue-200', 'scale-[1.02]');
                 btn.classList.add('bg-gray-100', 'text-gray-800', 'hover:bg-gray-200');
             });
         });
 
-        // --- PAYMENT METHOD SELECTION (clean toggle) ---
+        // Payment method selection
         paymentButtons.forEach(btn => {
             btn.addEventListener('click', function () {
                 const method = this.getAttribute('data-method');
@@ -206,7 +283,7 @@
                 paymentButtons.forEach(card => {
                     card.classList.remove('border-blue-500', 'bg-blue-50/70', 'ring-2', 'ring-blue-200');
                     card.classList.add('border-gray-200', 'bg-white');
-                    // reset inner radio-like marker
+                    
                     const markerDiv = card.querySelector('div.flex.items-center.justify-between > div:last-child');
                     if (markerDiv) {
                         markerDiv.classList.remove('border-blue-500', 'bg-blue-500');
@@ -227,7 +304,7 @@
             });
         });
         
-        // --- initial UI sync based on backend selected values (if any) ---
+        // Initial UI sync
         if (amountInput.value && amountInput.value !== "") {
             const matchedPreset = Array.from(amountOptions).find(btn => btn.getAttribute('data-amount') === amountInput.value);
             if (matchedPreset) {
@@ -243,7 +320,6 @@
             amountInput.value = customAmountField.value;
         }
         
-        // initial payment method highlight
         if (paymentMethodInput.value) {
             const activePayment = Array.from(paymentButtons).find(btn => btn.getAttribute('data-method') === paymentMethodInput.value);
             if (activePayment) {
@@ -268,8 +344,16 @@
             }
         }
     });
-</script>
 
+
+    // message auto hide after 5 seconds
+    setTimeout(() => {
+        document.querySelectorAll('.animate-fade-in').forEach(el => {
+            el.classList.add('opacity-0', 'transition-opacity', 'duration-500');
+            setTimeout(() => el.remove(), 500);
+        });
+    }, 5000);
+</script>
 
 {% include "iCare/partials/footer.html" %}
 {% endblock %}
