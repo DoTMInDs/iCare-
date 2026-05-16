@@ -13,7 +13,7 @@ from django.views.decorators.http import require_http_methods
 from .forms import UserProfileForm, CustomPasswordChangeForm, PhoneRegistrationForm
 from django.db.models import Sum
 from core.models import UserInvestment
-from iCare.tasks import (
+from iCare_auth.tasks import (
     send_welcome_email
 )
 

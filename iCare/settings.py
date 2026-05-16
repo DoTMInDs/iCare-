@@ -242,6 +242,17 @@ CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = TIME_ZONE
 CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 
+# Robustness settings for Redis/Celery
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+CELERY_BROKER_TRANSPORT_OPTIONS = {
+    'max_retries': 5,
+    'interval_start': 0,
+    'interval_step': 0.2,
+    'interval_max': 0.5,
+    'visibility_timeout': 3600,
+}
+CELERY_REDIS_RETRY_ON_TIMEOUT = True
+
 # PWA Configuration
 PWA_APP_NAME = 'RoBosForx'
 PWA_APP_DESCRIPTION = "Professional Trading Platform - Fast, Secure, Reliable"
@@ -352,7 +363,7 @@ PWA_APP_SPLASH_SCREEN = [
 PWA_APP_SHORTCUTS = [
     {
         'name': 'Home',
-        'url': '/',
+        'url': '/core/home/',
         'description': 'Go to home page',
         'icons': [{'src': '/static/imgs/icons/icon-96x96.png', 'sizes': '96x96'}]
     },
@@ -364,13 +375,13 @@ PWA_APP_SHORTCUTS = [
     },
     {
         'name': 'Recharge',
-        'url': '/recharge/',
+        'url': '/core/recharge/',
         'description': 'Add funds',
         'icons': [{'src': '/static/imgs/icons/icon-96x96.png', 'sizes': '96x96'}]
     },
     {
         'name': 'Withdraw',
-        'url': '/withdraw/',
+        'url': '/core/withdraw/',
         'description': 'Withdraw funds',
         'icons': [{'src': '/static/imgs/icons/icon-96x96.png', 'sizes': '96x96'}]
     }

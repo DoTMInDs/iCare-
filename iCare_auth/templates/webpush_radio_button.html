@@ -149,14 +149,17 @@
                 });
                 
                 // Send subscription to server
-                const response = await fetch('/webpush/save_information/', {
+                const response = await fetch('/webpush/save_information', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'X-CSRFToken': getCookie('csrftoken')
                     },
                     body: JSON.stringify({
-                        subscription: subscription
+                        status_type: 'subscribe',
+                        subscription: subscription.toJSON(),
+                        browser: navigator.userAgent,
+                        user_agent: navigator.userAgent
                     })
                 });
                 
@@ -201,14 +204,17 @@
                 
                 if (subscription) {
                     // Send unsubscribe request to server
-                    await fetch('/webpush/remove_information/', {
+                    await fetch('/webpush/save_information', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
                             'X-CSRFToken': getCookie('csrftoken')
                         },
                         body: JSON.stringify({
-                            subscription: subscription
+                            status_type: 'unsubscribe',
+                            subscription: subscription.toJSON(),
+                            browser: navigator.userAgent,
+                            user_agent: navigator.userAgent
                         })
                     });
                     

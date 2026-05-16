@@ -26,7 +26,7 @@ from .paystack_service import PaystackService
 from django.db.models import Sum
 from django.urls import reverse
 from datetime import date, timedelta
-from iCare.tasks import (
+from core.tasks import (
     process_referral_commission,
     update_team_volumes
 )

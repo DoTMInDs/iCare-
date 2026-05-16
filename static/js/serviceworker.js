@@ -1,14 +1,14 @@
 // static/js/serviceworker.js
-var staticCacheName = "RoBosForx-pwa-v" + new Date().getTime();
+var staticCacheName = "RoBosForx-pwa-v" + new Date().getTime() + "-v2";
 
 // Files to cache - Use root (/) for login page
 var filesToCache = [
     '/',              // Root - your login page
     '/profile/',
-    '/recharge/',
-    '/withdraw/',
-    '/home/',         // Keep if you have home page after login
-    '/offline/',
+    '/core/recharge/',
+    '/core/withdraw/',
+    '/core/home/',         // Keep if you have home page after login
+    '/core/offline/',
     '/static/imgs/icons/icon-192x192.png',
     '/static/imgs/icons/icon-72x72.png'
 ];
