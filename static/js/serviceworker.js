@@ -1,14 +1,11 @@
 // static/js/serviceworker.js
-var staticCacheName = "RoBosForx-pwa-v" + new Date().getTime() + "-v3";
+var staticCacheName = "RoBosForx-pwa-v" + new Date().getTime() + "-v4";
 
-// Files to cache - Use root (/) for login page
+// Files to cache - Only cache public, unauthenticated routes!
+// Caching protected routes causes redirects, which Chrome rejects in cache.addAll()
 var filesToCache = [
     '/',              // Root - your login page
-    '/profile/',
-    '/core/recharge/',
-    '/core/withdraw/',
-    '/core/home/',         // Keep if you have home page after login
-    '/core/offline/',
+    '/core/offline/', // Public offline page
     '/static/imgs/icons/icon-192x192.png',
     '/static/imgs/icons/icon-72x72.png'
 ];
@@ -72,7 +69,7 @@ self.addEventListener("fetch", event => {
                     if (cachedResponse) {
                         return cachedResponse;
                     }
-                    return caches.match('/offline/');
+                    return caches.match('/core/offline/');
                 })
         );
         return;

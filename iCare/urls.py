@@ -28,16 +28,6 @@ urlpatterns = [
     path('webpush/', include('webpush.urls')),
     
 
-     # PWA and Service Worker
-    path('serviceworker.js', TemplateView.as_view(
-        template_name='serviceworker.js',
-        content_type='application/javascript'
-    ), name='serviceworker'),
-    
-    path('manifest.json', TemplateView.as_view(
-        template_name='manifest.json',
-        content_type='application/json'
-    ), name='manifest'),
 ]
 
 if settings.DEBUG:
