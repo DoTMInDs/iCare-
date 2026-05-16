@@ -1,5 +1,5 @@
 // static/js/serviceworker.js
-var staticCacheName = "RoBosForx-pwa-v" + new Date().getTime() + "-v2";
+var staticCacheName = "RoBosForx-pwa-v" + new Date().getTime() + "-v3";
 
 // Files to cache - Use root (/) for login page
 var filesToCache = [
