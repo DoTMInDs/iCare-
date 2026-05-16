@@ -8,4 +8,8 @@ urlpatterns = [
     path('profile/', views.profile, name='profile'),
     path('account/update/', views.update_profile, name='update_profile'),
     path('account/change-password/', views.change_password, name='change_password'),
+    
+    path('api/save-notification-preference/', views.save_notification_preference, name='save_notification_preference'),
+    path('api/get-notification-preference/', views.get_notification_preference, name='get_notification_preference'),
+    path('api/send-test-notification/', views.send_test_notification, name='send_test_notification'),
 ]

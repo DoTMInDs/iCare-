@@ -17,6 +17,11 @@ from iCare.tasks import (
     send_welcome_email
 )
 
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from webpush import send_user_notification
+import json
+
 # Create your views here.
 def process_referral_on_signup(new_user, referral_code):
     """Helper function to process referral during signup - only updates relationships, doesn't create duplicates"""
@@ -291,3 +296,59 @@ def change_password(request):
                 messages.error(request, f'{error}')
     
     return redirect('profile')
+
+
+@csrf_exempt
+@login_required
+def save_notification_preference(request):
+    """Save user's notification type preference"""
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            notification_type = data.get('notification_type', 'all')
+            
+            # Save to user profile
+            profile = request.user.profile
+            profile.notification_type = notification_type
+            profile.save()
+            
+            return JsonResponse({'status': 'success'})
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    
+    return JsonResponse({'error': 'Invalid method'}, status=400)
+
+@login_required
+def get_notification_preference(request):
+    """Get user's notification type preference"""
+    try:
+        notification_type = request.user.profile.notification_type
+        return JsonResponse({'notification_type': notification_type})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+# views.py
+@csrf_exempt
+@require_http_methods(["POST"])
+def send_test_notification(request):
+    """Send a test push notification"""
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Not authenticated'}, status=401)
+    
+    try:
+        data = json.loads(request.body)
+        
+        payload = {
+            'head': data.get('title', 'RoBosForx'),
+            'body': data.get('message', 'Test notification'),
+            'icon': '/static/imgs/icons/icon-192x192.png',
+            'url': data.get('url', '/')  # Changed to root
+        }
+        
+        send_user_notification(user=request.user, payload=payload, ttl=86400)
+        
+        return JsonResponse({'status': 'success'})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+    
+    

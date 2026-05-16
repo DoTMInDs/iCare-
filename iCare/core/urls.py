@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from django.views.generic import TemplateView
 
 urlpatterns = [
     path('home/', views.home, name='home'),
@@ -42,4 +43,6 @@ urlpatterns = [
     # Team URLs
     path('team/', views.team, name='team'),
     path('member-details/', views.member_details, name='member_details'),
+
+    path('offline/', TemplateView.as_view(template_name='offline.html'), name='offline'),
 ]

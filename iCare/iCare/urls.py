@@ -16,10 +16,30 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from django.conf import settings
+from django.conf.urls.static import static
+from django.views.generic import TemplateView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('iCare_auth.urls')),
     path('core/', include('core.urls')),
     path('', include('pwa.urls')),
+    path('webpush/', include('webpush.urls')),
+    
+
+     # PWA and Service Worker
+    path('serviceworker.js', TemplateView.as_view(
+        template_name='serviceworker.js',
+        content_type='application/javascript'
+    ), name='serviceworker'),
+    
+    path('manifest.json', TemplateView.as_view(
+        template_name='manifest.json',
+        content_type='application/json'
+    ), name='manifest'),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

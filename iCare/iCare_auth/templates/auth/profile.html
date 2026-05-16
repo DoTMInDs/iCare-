@@ -1,6 +1,7 @@
 {% extends "iCare/base.html" %}
 {% load static %}
 {% load humanize %}
+{% load webpush_extras %}
 {% block title %}My Profile{% endblock %}
 
 {% block content %}
@@ -226,6 +227,10 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                 </svg>
             </a>
+
+            <!-- Web Push Notification Container -->
+            {% webpush_radio_button %}
+            
 
             <button onclick="openPasswordModal()" class="flex items-center justify-between p-4 bg-white rounded-xl border border-gray-100 hover:shadow-sm transition w-full">
                 <div class="flex items-center gap-3">
@@ -485,6 +490,7 @@
     }
     .animate-fade-in { animation: fadeIn 0.5s ease-out; }
     .animate-fade-in-up { animation: fadeInUp 0.3s ease-out; }
+
 </style>
 
 <script>
