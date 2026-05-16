@@ -6,7 +6,8 @@ pip install -r requirements.txt
 
 python manage.py collectstatic --no-input
 
-python manage.py migrate
+python manage.py makemigrations --noinput
+python manage.py migrate --noinput || python manage.py migrate webpush --fake
 
 if [ "$DJANGO_CREATEUSER" == "1" ]; then 
     python manage.py createsuperuser --noinput
