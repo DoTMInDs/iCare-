@@ -47,7 +47,7 @@
             </div>
         </div>
 
-        <form method="post" class="space-y-7">
+        <form method="post" id="topup-form" class="space-y-7">
             {% csrf_token %}
             <input id="amount-input" type="hidden" name="amount" value="{{ selected_amount }}">
             <input id="payment-method-input" type="hidden" name="payment_method" value="{{ selected_payment }}">
@@ -73,11 +73,11 @@
                     <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide">Quick top-up</h2>
                     <span class="text-xs text-gray-400">Min GHS 100</span>
                 </div>
-                <div class="grid grid-cols-4 gap-3">
+                <div class="flex flex-wrap justify-center gap-2 sm:gap-3">
                     {% for amount in preset_amounts %}
                     <button type="button" data-amount="{{ amount }}" 
-                        class="amount-option py-3 rounded-2xl text-base font-semibold transition-all duration-200 
-                        {% if selected_amount == amount|stringformat:"s" %}bg-blue-600 text-white shadow-md shadow-blue-200 scale-[1.02]{% else %}bg-gray-100 text-gray-800 hover:bg-gray-200{% endif %}">
+                        class="amount-option flex-1 min-w-[70px] sm:min-w-[80px] py-2 sm:py-3 px-1 border border-slate-100 shadow-md rounded-2xl text-sm sm:text-base font-semibold transition-all duration-200 truncate
+                        {% if selected_amount == amount|stringformat:"s" %}bg-blue-600 text-white shadow-md shadow-blue-200 scale-[1.02]{% else %}bg-gray-100 text-gray-800 shadow-md hover:bg-gray-200{% endif %}">
                         ₵{{ amount|intcomma }}
                     </button>
                     {% endfor %}
@@ -85,19 +85,21 @@
             </div>
 
             <!-- Custom amount input -->
-            <div class="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
-                <label class="block text-sm font-medium text-gray-700 mb-2">Custom amount (GHS)</label>
-                <div class="flex items-center gap-2 bg-gray-50 rounded-xl px-4 py-3 border border-gray-200 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100 transition">
-                    <span class="text-xl font-bold text-blue-600">₵</span>
-                    <input id="custom-amount" name="custom_amount" type="number" min="100" step="1" 
-                        placeholder="Enter amount" value="{{ custom_amount }}"
-                        class="w-full bg-transparent outline-none text-lg font-medium text-gray-900 placeholder-gray-400">
+            <div>
+                <div class="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Custom amount (GHS)</label>
+                    <div class="flex items-center gap-2 bg-gray-50 rounded-xl px-4 py-3 border border-gray-200 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100 transition">
+                        <span class="text-xl font-bold text-blue-600">₵</span>
+                        <input id="custom-amount" name="custom_amount" type="number" min="100" step="1" 
+                            placeholder="Enter amount" value="{{ custom_amount }}"
+                            class="w-full bg-transparent outline-none text-lg font-medium text-gray-900 placeholder-gray-400">
+                    </div>
+                    <p class="text-xs text-gray-400 mt-2">Minimum recharge: <span class="font-medium">GHS 100</span></p>
                 </div>
-                <p class="text-xs text-gray-400 mt-2">Minimum recharge: <span class="font-medium">GHS 100</span></p>
             </div>
 
             <!-- Payment Methods Section -->
-            <div>
+            <div class="payment-methods-section">
                 <div class="flex justify-between items-center mb-3">
                     <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide">Payment method</h2>
                     <a href="{% url 'saved_payment_methods' %}" class="text-xs text-blue-600 font-medium flex items-center gap-1">
@@ -139,7 +141,7 @@
                         {% for account in saved_accounts %}
                         <button type="button" data-method="{{ account.id }}" data-account-type="{{ account.account_type }}"
                             class="payment-card w-full p-4 rounded-2xl text-left transition-all duration-200 border 
-                            {% if selected_payment|stringformat:"s" == account.id|stringformat:"s" %}border-blue-500 bg-blue-50/70 ring-2 ring-blue-200{% else %}border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm{% endif %}">
+                            {% if account.is_default %}border-blue-500 bg-blue-50/50{% else %}border-gray-200 hover:border-gray-300{% endif %} ">
                             <div class="flex items-center justify-between">
                                 <div class="flex items-center gap-4">
                                     {% if account.account_type == 'mobile_money' %}
@@ -175,10 +177,12 @@
                                         </p>
                                     </div>
                                 </div>
-                                <div class="w-6 h-6 rounded-full border-2 flex items-center justify-center 
-                                    {% if selected_payment|stringformat:"s" == account.id|stringformat:"s" %}border-blue-500 bg-blue-500{% else %}border-gray-300{% endif %}">
-                                    {% if selected_payment|stringformat:"s" == account.id|stringformat:"s" %}
-                                    <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg>
+                                <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center
+                                    {% if account.is_default %}border-blue-500 bg-blue-500{% else %}border-gray-300{% endif %}">
+                                    {% if account.is_default %}
+                                    <svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/>
+                                    </svg>
                                     {% endif %}
                                 </div>
                             </div>
@@ -189,8 +193,12 @@
             </div>
 
             <!-- CTA Button -->
-            <button type="submit" class="w-full py-4 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold rounded-2xl transition-all duration-300 shadow-lg shadow-blue-200 active:scale-[0.98]">
-                Confirm & proceed
+            <button type="submit" id="submitBtn" class="w-full py-4 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold rounded-2xl transition-all duration-300 shadow-lg shadow-blue-200 active:scale-[0.98] flex items-center justify-center gap-2">
+                <span class="button-text">Confirm & proceed</span>
+                <svg class="button-spinner hidden w-5 h-5 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
             </button>
 
             <!-- Important notes -->
@@ -234,6 +242,10 @@
         const amountOptions = document.querySelectorAll('.amount-option');
         const paymentButtons = document.querySelectorAll('.payment-card');
         const paymentMethodInput = document.getElementById('payment-method-input');
+        const submitBtn = document.getElementById('submitBtn');
+        const form = document.getElementById('topup-form');
+        
+        let formSubmitted = false;
 
         // Amount preset logic
         function updateAmountSelection(selectedElement, amountValue) {
@@ -255,15 +267,19 @@
             });
         });
 
-        // Custom amount input sync
+        // Custom amount input sync with validation
         customAmountField.addEventListener('input', function () {
             let rawValue = this.value.trim();
             if (rawValue === "") {
                 amountInput.value = "";
             } else {
                 let numValue = parseFloat(rawValue);
-                if (!isNaN(numValue)) {
+                if (!isNaN(numValue) && numValue >= 100) {
                     amountInput.value = numValue;
+                    customAmountField.classList.remove('border-red-300');
+                } else if (!isNaN(numValue) && numValue < 100) {
+                    amountInput.value = numValue;
+                    customAmountField.classList.add('border-red-300');
                 } else {
                     amountInput.value = rawValue;
                 }
@@ -301,9 +317,114 @@
                     markerDiv.classList.add('border-blue-500', 'bg-blue-500');
                     markerDiv.innerHTML = `<svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg>`;
                 }
+                
+                // Remove any existing payment error message
+                const paymentError = document.getElementById('payment-error');
+                if (paymentError) paymentError.remove();
             });
         });
         
+        // Validation function
+        function validateForm() {
+            const amount = amountInput.value;
+            const paymentMethod = paymentMethodInput.value;
+            let isValid = true;
+            let errorMessage = '';
+
+            // Remove existing error messages
+            const existingAmountError = document.getElementById('amount-error');
+            const existingPaymentError = document.getElementById('payment-error');
+            if (existingAmountError) existingAmountError.remove();
+            if (existingPaymentError) existingPaymentError.remove();
+
+            // Validate amount
+            if (!amount || amount === "") {
+                errorMessage = 'Please select or enter an amount';
+                isValid = false;
+                showError('amount-error', errorMessage, customAmountField);
+            } else if (parseFloat(amount) < 100) {
+                errorMessage = 'Minimum amount is GHS 100';
+                isValid = false;
+                showError('amount-error', errorMessage, customAmountField);
+            }
+
+            // Validate payment method
+            if (!paymentMethod || paymentMethod === "") {
+                errorMessage = 'Please select a payment method';
+                isValid = false;
+                showError('payment-error', errorMessage, null);
+            }
+
+            return isValid;
+        }
+
+        function showError(errorId, message, inputElement) {
+            const errorDiv = document.createElement('div');
+            errorDiv.id = errorId;
+            errorDiv.className = 'flex items-center gap-2 mt-2 text-sm text-red-600 animate-fade-in';
+            errorDiv.innerHTML = `
+                <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <span>${message}</span>
+            `;
+            
+            if (inputElement) {
+                inputElement.classList.add('border-red-300', 'ring-2', 'ring-red-100');
+                inputElement.parentElement.parentElement.appendChild(errorDiv);
+                
+                // Remove error styling on input
+                inputElement.addEventListener('input', function() {
+                    this.classList.remove('border-red-300', 'ring-2', 'ring-red-100');
+                    const error = document.getElementById(errorId);
+                    if (error) error.remove();
+                }, { once: true });
+            } else {
+                // Find payment methods section and insert error
+                const paymentSection = document.querySelector('.payment-methods-section');
+                if (paymentSection) {
+                    paymentSection.appendChild(errorDiv);
+                } else {
+                    document.querySelector('.space-y-7').insertBefore(errorDiv, submitBtn);
+                }
+            }
+        }
+
+        // Submit button with validation
+        if (submitBtn) {
+            submitBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                // Check if already submitted
+                if (formSubmitted || this.disabled) {
+                    return;
+                }
+                
+                // Validate form
+                if (!validateForm()) {
+                    // Scroll to the first error
+                    const firstError = document.querySelector('[id$="-error"]');
+                    if (firstError) {
+                        firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                    return;
+                }
+                
+                // Show loading state
+                formSubmitted = true;
+                this.disabled = true;
+                const buttonText = this.querySelector('.button-text');
+                const spinner = this.querySelector('.button-spinner');
+                
+                buttonText.classList.add('hidden');
+                spinner.classList.remove('hidden');
+                this.classList.add('opacity-80', 'cursor-not-allowed');
+                
+                // Submit the form
+                form.submit();
+            });
+        }
+
         // Initial UI sync
         if (amountInput.value && amountInput.value !== "") {
             const matchedPreset = Array.from(amountOptions).find(btn => btn.getAttribute('data-amount') === amountInput.value);
@@ -345,7 +466,6 @@
         }
     });
 
-
     // message auto hide after 5 seconds
     setTimeout(() => {
         document.querySelectorAll('.animate-fade-in').forEach(el => {
@@ -354,6 +474,7 @@
         });
     }, 5000);
 </script>
+
 
 {% include "iCare/partials/footer.html" %}
 {% endblock %}

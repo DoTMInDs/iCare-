@@ -1,0 +1,52 @@
+{% extends 'iCare/base.html' %}
+{% load static %}
+
+{% block title %}Offline - RoBosForx{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center px-4">
+    <div class="text-center max-w-md">
+        <div class="mb-6">
+            <div class="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg class="w-12 h-12 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636L21 8.5m0 0l-2.636 2.864M21 8.5h-4.5M5.636 18.364L3 15.5m0 0l2.636-2.864M3 15.5h4.5M12 3v3m0 12v3m-9-9h3m12 0h3M12 16a4 4 0 110-8 4 4 0 010 8z"/>
+                </svg>
+            </div>
+            <h1 class="text-2xl font-bold text-gray-900 mb-2">You're Offline</h1>
+            <p class="text-gray-600 mb-6">Don't worry! You can still access some features while offline.</p>
+        </div>
+        
+        <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
+            <h2 class="font-semibold text-gray-900 mb-3">Available Offline Features:</h2>
+            <ul class="text-left space-y-2 text-gray-600">
+                <li class="flex items-center gap-2">
+                    <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    View your last known balance
+                </li>
+                <li class="flex items-center gap-2">
+                    <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    Browse trading history
+                </li>
+                <li class="flex items-center gap-2">
+                    <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    Access saved documents
+                </li>
+            </ul>
+        </div>
+        
+        <button onclick="window.location.reload()" class="w-full py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition shadow-lg shadow-blue-200">
+            Try to Reconnect
+        </button>
+        
+        <p class="text-xs text-gray-400 mt-4">
+            Once you're back online, all features will be available again.
+        </p>
+    </div>
+</div>
+{% endblock %}

@@ -1,10 +1,13 @@
-{% load static tailwind_tags %}
+{% load static tailwind_tags pwa %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>iCare - {% block title %}{% endblock %}</title>
+    <title>RoBosForx - {% block title %}{% endblock %}</title>
+
+    <!-- PWA Manifest and Meta Tags -->
+    {% progressive_web_app_meta %}
 
     {% tailwind_css %}
     <script src="https://kit.fontawesome.com/1566b08547.js" crossorigin="anonymous"></script>
@@ -23,5 +26,240 @@
             
         {% endblock %}
     </footer>
+
+    <!-- PWA Service Worker Registration and Install Prompt -->
+    <script>
+        let deferredPrompt;
+        let installButton = null;
+
+        // Service Worker Registration
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/serviceworker.js').then(function(registration) {
+                    console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                    
+                    // Check for updates
+                    registration.addEventListener('updatefound', () => {
+                        const newWorker = registration.installing;
+                        console.log('Service Worker update found!');
+                        newWorker.addEventListener('statechange', () => {
+                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                showUpdateNotification();
+                            }
+                        });
+                    });
+                }).catch(function(err) {
+                    console.log('ServiceWorker registration failed: ', err);
+                });
+            });
+        }
+
+        // Show update notification
+        function showUpdateNotification() {
+            const updateBanner = document.createElement('div');
+            updateBanner.id = 'pwa-update-banner';
+            updateBanner.style.cssText = `
+                position: fixed;
+                bottom: 20px;
+                left: 20px;
+                right: 20px;
+                z-index: 9999;
+                background: #1e293b;
+                color: white;
+                padding: 16px;
+                border-radius: 12px;
+                box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+                font-family: system-ui, -apple-system, sans-serif;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 16px;
+                max-width: 400px;
+                margin: 0 auto;
+            `;
+            
+            updateBanner.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="width: 32px; height: 32px; background: #3b82f6; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                        🔄
+                    </div>
+                    <div>
+                        <div style="font-weight: 600; font-size: 14px;">Update Available</div>
+                        <div style="font-size: 12px; opacity: 0.9;">A new version is ready</div>
+                    </div>
+                </div>
+                <button onclick="updatePWA()" style="background: #3b82f6; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 12px;">
+                    Update
+                </button>
+            `;
+            
+            document.body.appendChild(updateBanner);
+            
+            setTimeout(() => {
+                updateBanner.style.opacity = '1';
+            }, 100);
+        }
+
+        function updatePWA() {
+            const banner = document.getElementById('pwa-update-banner');
+            if (banner) banner.remove();
+            window.location.reload();
+        }
+
+        // Create install button (modern design)
+        function createInstallButton() {
+            if (installButton) return;
+            
+            installButton = document.createElement('div');
+            installButton.id = 'pwa-install-banner';
+            installButton.style.cssText = `
+                position: fixed;
+                bottom: 20px;
+                left: 20px;
+                right: 20px;
+                z-index: 9999;
+                background: linear-gradient(135deg, #1e293b, #0f172a);
+                backdrop-filter: blur(10px);
+                border-radius: 16px;
+                box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+                max-width: 400px;
+                margin: 0 auto;
+                font-family: system-ui, -apple-system, sans-serif;
+                transform: translateY(100%);
+                transition: transform 0.3s ease;
+                border: 1px solid rgba(255,255,255,0.1);
+            `;
+            
+            installButton.innerHTML = `
+                <div style="padding: 16px;">
+                    <div style="display: flex; align-items: start; gap: 12px; margin-bottom: 12px;">
+                        <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #3b82f6, #2563eb); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px;">
+                            📱
+                        </div>
+                        <div style="flex: 1;">
+                            <div style="font-weight: 700; font-size: 16px; color: white; margin-bottom: 4px;">Install RoBosForx App</div>
+                            <div style="font-size: 13px; color: #94a3b8;">Get faster access, offline support, and a better trading experience</div>
+                        </div>
+                        <button onclick="dismissInstallPrompt()" style="background: none; border: none; color: #94a3b8; cursor: pointer; padding: 4px; font-size: 20px; line-height: 1;">×</button>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button onclick="installPWA()" style="flex: 1; background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; border: none; padding: 10px 16px; border-radius: 10px; font-weight: 600; cursor: pointer; font-size: 14px;">
+                            Install Now
+                        </button>
+                        <button onclick="dismissInstallPrompt()" style="background: rgba(255,255,255,0.1); color: white; border: none; padding: 10px 16px; border-radius: 10px; cursor: pointer; font-size: 14px;">
+                            Later
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(installButton);
+            
+            // Slide up animation
+            setTimeout(() => {
+                installButton.style.transform = 'translateY(0)';
+            }, 100);
+        }
+
+        // Handle beforeinstallprompt event
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            
+            // Check if user dismissed recently (30 days)
+            const dismissed = localStorage.getItem('pwa-install-dismissed');
+            const dismissedTime = dismissed ? parseInt(dismissed) : 0;
+            const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000);
+            
+            // Check if already installed
+            const isInstalled = window.matchMedia('(display-mode: standalone)').matches;
+            
+            if (!isInstalled && dismissedTime < thirtyDaysAgo) {
+                // Show install button after a delay
+                setTimeout(createInstallButton, 5000);
+            }
+        });
+
+        // Install PWA function
+        function installPWA() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        console.log('User accepted the install prompt');
+                        // Track installation in analytics
+                        if (typeof gtag !== 'undefined') {
+                            gtag('event', 'pwa_installed', { 'event_category': 'pwa' });
+                        }
+                    }
+                    deferredPrompt = null;
+                    dismissInstallPrompt();
+                });
+            }
+        }
+
+        // Dismiss install prompt
+        function dismissInstallPrompt() {
+            const banner = document.getElementById('pwa-install-banner');
+            if (banner) {
+                banner.style.transform = 'translateY(100%)';
+                setTimeout(() => {
+                    banner.remove();
+                    installButton = null;
+                }, 300);
+                // Store dismissal for 30 days
+                localStorage.setItem('pwa-install-dismissed', Date.now().toString());
+            }
+        }
+
+        // Handle app installed event
+        window.addEventListener('appinstalled', (evt) => {
+            console.log('RoBosForx PWA was installed');
+            dismissInstallPrompt();
+            
+            // Show success message
+            const successMsg = document.createElement('div');
+            successMsg.style.cssText = `
+                position: fixed;
+                top: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: #10b981;
+                color: white;
+                padding: 12px 20px;
+                border-radius: 10px;
+                z-index: 10000;
+                font-family: system-ui, sans-serif;
+                font-size: 14px;
+                font-weight: 500;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            `;
+            successMsg.textContent = '✅ RoBosForx app installed successfully!';
+            document.body.appendChild(successMsg);
+            
+            setTimeout(() => {
+                successMsg.remove();
+            }, 3000);
+        });
+
+        // Check if app is already installed and show different UI
+        if (window.matchMedia('(display-mode: standalone)').matches) {
+            console.log('App is running in standalone mode');
+            // You can hide install prompts and show app-specific UI
+        }
+        
+        // Request notification permission
+        if ('Notification' in window && window.matchMedia('(display-mode: standalone)').matches) {
+            setTimeout(() => {
+                if (Notification.permission === 'default') {
+                    // Ask for permission after user interaction
+                    document.body.addEventListener('click', function requestNotification() {
+                        Notification.requestPermission();
+                        document.body.removeEventListener('click', requestNotification);
+                    });
+                }
+            }, 5000);
+        }
+    </script>
 </body>
 </html>

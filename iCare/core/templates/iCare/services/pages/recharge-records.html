@@ -74,9 +74,9 @@
             {% for transaction in transactions %}
             <div class="transaction-item bg-white rounded-2xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200"
                  data-status="{{ transaction.status }}">
-                <div class="flex items-start justify-between gap-3">
+                <div class="flex items-start justify-between gap-3 w-full overflow-hidden">
                     <!-- Left side: icon + details -->
-                    <div class="flex items-start gap-3 flex-1">
+                    <div class="flex items-start gap-3 flex-1 min-w-0 overflow-hidden">
                         <!-- Status Icon -->
                         <div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0
                             {% if transaction.status == 'success' %}bg-green-100
@@ -85,41 +85,41 @@
                             {% elif transaction.status == 'in_progress' %}bg-blue-100
                             {% else %}bg-gray-100{% endif %}">
                             {% if transaction.status == 'success' %}
-                            <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="w-5 h-5 text-green-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                             </svg>
                             {% elif transaction.status == 'pending' %}
-                            <svg class="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="w-5 h-5 text-yellow-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                             </svg>
                             {% elif transaction.status == 'failed' %}
-                            <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="w-5 h-5 text-red-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                             </svg>
                             {% elif transaction.status == 'in_progress' %}
-                            <svg class="w-5 h-5 text-blue-600 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="w-5 h-5 text-blue-600 animate-pulse flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
                             </svg>
                             {% else %}
-                            <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="w-5 h-5 text-gray-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                             </svg>
                             {% endif %}
                         </div>
                         
                         <!-- Transaction Info -->
-                        <div class="flex-1 min-w-0">
+                        <div class="flex-1 min-w-0 overflow-hidden">
                             <div class="flex items-center gap-2 flex-wrap">
-                                <p class="text-sm font-mono font-semibold text-gray-900 truncate">
+                                <p class="text-sm font-mono font-semibold text-gray-900 truncate max-w-full">
                                     {{ transaction.reference|truncatechars:16 }}
                                 </p>
                                 {% if transaction.payment_method %}
-                                <span class="text-xs bg-gray-100 px-2 py-0.5 rounded-full text-gray-600">
-                                    {{ transaction.payment_method }}
+                                <span class="text-xs bg-gray-100 px-2 py-0.5 rounded-full text-gray-600 flex-shrink-0">
+                                    {{ transaction.payment_method|truncatechars:10 }}
                                 </span>
                                 {% endif %}
                             </div>
-                            <p class="text-xs text-gray-500 mt-1.5">
+                            <p class="text-xs text-gray-500 mt-1.5 break-words">
                                 {{ transaction.created_at|date:"M d, Y H:i:s" }}
                             </p>
                             {% if transaction.notes %}
@@ -129,11 +129,11 @@
                     </div>
                     
                     <!-- Right side: amount + status -->
-                    <div class="text-right flex-shrink-1">
-                        <p class="text-base font-bold {% if transaction.status == 'success' %}text-green-600{% else %}text-gray-900{% endif %}">
+                    <div class="text-right flex-shrink-0">
+                        <p class="text-base font-bold whitespace-nowrap {% if transaction.status == 'success' %}text-green-600{% else %}text-gray-900{% endif %}">
                             ₵ {{ transaction.amount|floatformat:2|intcomma }}
                         </p>
-                        <p class="text-xs font-medium mt-1.5 px-2 py-0.5 rounded-full inline-block
+                        <p class="text-xs font-medium mt-1.5 px-2 py-0.5 rounded-full inline-block whitespace-nowrap
                             {% if transaction.status == 'success' %}bg-green-100 text-green-700
                             {% elif transaction.status == 'pending' %}bg-yellow-100 text-yellow-700
                             {% elif transaction.status == 'failed' %}bg-red-100 text-red-700

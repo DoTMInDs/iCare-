@@ -21,4 +21,5 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('iCare_auth.urls')),
     path('core/', include('core.urls')),
+    path('', include('pwa.urls')),
 ]

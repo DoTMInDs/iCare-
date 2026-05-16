@@ -43,7 +43,7 @@ ALLOWED_HOSTS = [
 ]
 # ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "").split(",")
 CSRF_TRUSTED_ORIGINS = [
-    "https://2e89-154-161-48-222.ngrok-free.app",
+    "https://649d-154-161-8-99.ngrok-free.app",
 ]
 
 # Application definition
@@ -63,6 +63,8 @@ INSTALLED_APPS = [
     'phonenumber_field',
     'tailwind',
     'theme',
+
+    'pwa',
 ]
 
 TAILWIND_APP_NAME = "theme"
@@ -195,3 +197,164 @@ CELERY_TIMEZONE = TIME_ZONE
 CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 
 
+# PWA Configuration
+PWA_APP_NAME = 'RoBosForx'
+PWA_APP_DESCRIPTION = "Professional Trading Platform - Fast, Secure, Reliable"
+PWA_APP_THEME_COLOR = '#2563eb'  # Blue-600 to match your theme
+PWA_APP_BACKGROUND_COLOR = '#f8fafc'  # Slate-50
+PWA_APP_DISPLAY = 'standalone'
+PWA_APP_SCOPE = '/'
+PWA_APP_ORIENTATION = 'portrait-primary'
+PWA_APP_START_URL = '/dashboard/'  # Changed to dashboard for better UX
+PWA_APP_STATUS_BAR_COLOR = '#2563eb'  # Changed from 'default' to match theme
+
+# Updated icons with proper sizes
+PWA_APP_ICONS = [
+    {
+        'src': '/static/images/icons/icon-72x72.png',
+        'sizes': '72x72',
+        'type': 'image/png',
+        'purpose': 'any maskable'
+    },
+    {
+        'src': '/static/images/icons/icon-96x96.png',
+        'sizes': '96x96',
+        'type': 'image/png'
+    },
+    {
+        'src': '/static/images/icons/icon-128x128.png',
+        'sizes': '128x128',
+        'type': 'image/png'
+    },
+    {
+        'src': '/static/images/icons/icon-144x144.png',
+        'sizes': '144x144',
+        'type': 'image/png'
+    },
+    {
+        'src': '/static/images/icons/icon-152x152.png',
+        'sizes': '152x152',
+        'type': 'image/png'
+    },
+    {
+        'src': '/static/images/icons/icon-192x192.png',
+        'sizes': '192x192',
+        'type': 'image/png'
+    },
+    {
+        'src': '/static/images/icons/icon-384x384.png',
+        'sizes': '384x384',
+        'type': 'image/png'
+    },
+    {
+        'src': '/static/images/icons/icon-512x512.png',
+        'sizes': '512x512',
+        'type': 'image/png',
+        'purpose': 'any maskable'
+    }
+]
+
+PWA_APP_ICONS_APPLE = [
+    {
+        'src': '/static/images/icons/icon-152x152.png',
+        'sizes': '152x152',
+        'type': 'image/png'
+    },
+    {
+        'src': '/static/images/icons/icon-167x167.png',
+        'sizes': '167x167',
+        'type': 'image/png'
+    },
+    {
+        'src': '/static/images/icons/icon-180x180.png',
+        'sizes': '180x180',
+        'type': 'image/png'
+    }
+]
+
+# Splash screens for iOS devices
+PWA_APP_SPLASH_SCREEN = [
+    {
+        'src': '/static/images/icons/splash-640x1136.png',
+        'media': '(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2)',
+        'sizes': '640x1136'
+    },
+    {
+        'src': '/static/images/icons/splash-750x1334.png',
+        'media': '(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2)',
+        'sizes': '750x1334'
+    },
+    {
+        'src': '/static/images/icons/splash-1242x2208.png',
+        'media': '(device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3)',
+        'sizes': '1242x2208'
+    },
+    {
+        'src': '/static/images/icons/splash-1125x2436.png',
+        'media': '(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3)',
+        'sizes': '1125x2436'
+    },
+    {
+        'src': '/static/images/icons/splash-1536x2048.png',
+        'media': '(device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2)',
+        'sizes': '1536x2048'
+    }
+]
+
+PWA_APP_DIR = 'ltr'
+PWA_APP_LANG = 'en-US'
+
+# Updated shortcuts relevant to trading app
+PWA_APP_SHORTCUTS = [
+    {
+        'name': 'Dashboard',
+        'url': '/dashboard/',
+        'description': 'View your trading dashboard',
+        'icons': [{'src': '/static/images/icons/icon-96x96.png', 'sizes': '96x96'}]
+    },
+    {
+        'name': 'Trade',
+        'url': '/trade/',
+        'description': 'Start trading',
+        'icons': [{'src': '/static/images/icons/icon-96x96.png', 'sizes': '96x96'}]
+    },
+    {
+        'name': 'Top Up',
+        'url': '/topup/',
+        'description': 'Add funds to your account',
+        'icons': [{'src': '/static/images/icons/icon-96x96.png', 'sizes': '96x96'}]
+    },
+    {
+        'name': 'Withdraw',
+        'url': '/withdraw/',
+        'description': 'Withdraw your earnings',
+        'icons': [{'src': '/static/images/icons/icon-96x96.png', 'sizes': '96x96'}]
+    }
+]
+
+PWA_APP_SCREENSHOTS = [
+    {
+        'src': '/static/images/screenshots/dashboard.jpg',
+        'sizes': '1280x720',
+        'type': 'image/jpeg',
+        'form_factor': 'wide',
+        'label': 'Trading Dashboard'
+    },
+    {
+        'src': '/static/images/screenshots/trading.jpg',
+        'sizes': '1280x720',
+        'type': 'image/jpeg',
+        'form_factor': 'wide',
+        'label': 'Trading Interface'
+    },
+    {
+        'src': '/static/images/screenshots/mobile.jpg',
+        'sizes': '750x1334',
+        'type': 'image/jpeg',
+        'form_factor': 'narrow',
+        'label': 'Mobile Trading View'
+    }
+]
+
+# Enhanced service worker path
+PWA_SERVICE_WORKER_PATH = os.path.join(BASE_DIR, 'static/js/serviceworker.js')
