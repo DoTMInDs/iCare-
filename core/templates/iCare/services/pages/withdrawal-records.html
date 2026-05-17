@@ -344,6 +344,12 @@
     }
 </style>
 
+<!-- Hidden CSRF token so JS fetch can read it -->
+<div style="display: none;">{% csrf_token %}</div>
+
+<!-- Store cancel URL base so JS can use it without hardcoding -->
+<div id="cancel-url-base" data-url="{% url 'cancel_withdrawal' '00000000-0000-0000-0000-000000000000' %}" style="display:none;"></div>
+
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         // Filter functionality
@@ -419,8 +425,11 @@
     // Cancel withdrawal function
     function cancelWithdrawal(transactionId) {
         if (confirm('Are you sure you want to cancel this withdrawal request?')) {
-            // You can implement AJAX call here
-            fetch(`/withdrawal/cancel/${transactionId}/`, {
+            // Build cancel URL by replacing placeholder UUID with real transaction ID
+            const baseUrl = document.getElementById('cancel-url-base').dataset.url;
+            const cancelUrl = baseUrl.replace('00000000-0000-0000-0000-000000000000', transactionId);
+
+            fetch(cancelUrl, {
                 method: 'POST',
                 headers: {
                     'X-CSRFToken': getCookie('csrftoken'),
