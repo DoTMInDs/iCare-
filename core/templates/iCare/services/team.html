@@ -125,7 +125,7 @@
                     <!-- Left Node -->
                     <div class="flex-1 text-center relative pt-8">
                         <div class="absolute top-0 left-1/2 w-px h-8 bg-gray-300 transform -translate-x-1/2"></div>
-                        <div class="w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center shadow-lg mx-auto cursor-pointer hover:scale-105 transition" onclick="showMemberDetails('left')">
+                        <div class="w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center shadow-lg mx-auto cursor-pointer hover:scale-105 transition" hx-get="{% url 'member_details' %}?id=left" hx-target="#member-details-content" hx-swap="innerHTML" onclick="document.getElementById('member-modal').classList.remove('hidden'); document.getElementById('member-modal').classList.add('flex');">
                             <div class="text-center">
                                 <div class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-1">
                                     <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -142,7 +142,7 @@
                     <!-- Right Node -->
                     <div class="flex-1 text-center relative pt-8">
                         <div class="absolute top-0 left-1/2 w-px h-8 bg-gray-300 transform -translate-x-1/2"></div>
-                        <div class="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center shadow-lg mx-auto cursor-pointer hover:scale-105 transition" onclick="showMemberDetails('right')">
+                        <div class="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center shadow-lg mx-auto cursor-pointer hover:scale-105 transition" hx-get="{% url 'member_details' %}?id=right" hx-target="#member-details-content" hx-swap="innerHTML" onclick="document.getElementById('member-modal').classList.remove('hidden'); document.getElementById('member-modal').classList.add('flex');">
                             <div class="text-center">
                                 <div class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-1">
                                     <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -164,7 +164,7 @@
             <!-- Downline Members List -->
             {% if downline_members %}
                 {% for member in downline_members %}
-                <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition cursor-pointer" onclick="showMemberDetails('{{ member.id }}')">
+                <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition cursor-pointer" hx-get="{% url 'member_details' %}?id={{ member.id }}" hx-target="#member-details-content" hx-swap="innerHTML" onclick="document.getElementById('member-modal').classList.remove('hidden'); document.getElementById('member-modal').classList.add('flex');">
                     <div class="flex items-center justify-between">
                         <div class="flex items-center gap-3">
                             <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center">
@@ -377,51 +377,7 @@
         alert('Referral link copied to clipboard!');
     }
     
-    function showMemberDetails(memberId) {
-        const modal = document.getElementById('member-modal');
-        const content = document.getElementById('member-details-content');
-        
-        // Fetch member details from backend
-        fetch(`{% url "member_details" %}?id=${memberId}`)
-            .then(response => response.json())
-            .then(member => {
-                content.innerHTML = `
-                    <div class="space-y-4">
-                        <div class="flex items-center gap-4">
-                            <div class="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center">
-                                <span class="text-white text-xl font-bold">${member.name ? member.name.charAt(0) : member.phone.charAt(0)}</span>
-                            </div>
-                            <div>
-                                <h4 class="font-semibold text-gray-900">${member.name || member.phone}</h4>
-                                <p class="text-sm text-gray-500">${member.phone}</p>
-                            </div>
-                        </div>
-                        
-                        <div class="grid grid-cols-2 gap-3">
-                            <div class="bg-gray-50 rounded-xl p-3 text-center">
-                                <p class="text-xs text-gray-500">Joined Date</p>
-                                <p class="font-semibold text-gray-900">${member.joined_date}</p>
-                            </div>
-                            <div class="bg-gray-50 rounded-xl p-3 text-center">
-                                <p class="text-xs text-gray-500">Position</p>
-                                <p class="font-semibold text-gray-900">${member.position || 'N/A'}</p>
-                            </div>
-                            <div class="bg-gray-50 rounded-xl p-3 text-center">
-                                <p class="text-xs text-gray-500">Total Investment</p>
-                                <p class="font-semibold text-green-600">₵${member.total_investment}</p>
-                            </div>
-                            <div class="bg-gray-50 rounded-xl p-3 text-center">
-                                <p class="text-xs text-gray-500">Team Count</p>
-                                <p class="font-semibold text-blue-600">${member.team_count || 0}</p>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                modal.classList.remove('hidden');
-                modal.classList.add('flex');
-            })
-            .catch(error => console.error('Error:', error));
-    }
+    // HTMX handles member details modal rendering
     
     function closeMemberModal() {
         const modal = document.getElementById('member-modal');

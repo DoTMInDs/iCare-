@@ -1,5 +1,6 @@
 import uuid
 from django.conf import settings
+from django.core.cache import cache
 from django.db import models
 from django.utils import timezone
 from django.utils.crypto import get_random_string
@@ -25,16 +26,37 @@ class UserBalance(models.Model):
     def __str__(self):
         return f"{self.user.phone_number} - {self.balance} {self.currency}"
 
+    @classmethod
+    def get_user_balance(cls, user):
+        """Get user balance with caching"""
+        if not user.is_authenticated:
+            return None
+        cache_key = f'user_balance_{user.id}'
+        balance_obj = cache.get(cache_key)
+        if not balance_obj:
+            balance_obj, created = cls.objects.get_or_create(
+                user=user,
+                defaults={'balance': 0, 'currency': 'GHS'}
+            )
+            cache.set(cache_key, balance_obj, timeout=60)
+        return balance_obj
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        cache.delete(f'user_balance_{self.user_id}')
+
     def add_balance(self, amount):
         """Add amount to user balance"""
         self.balance += amount
         self.save(update_fields=['balance', 'updated_at'])
+        cache.delete(f'user_balance_{self.user_id}')
 
     def deduct_balance(self, amount):
         """Deduct amount from user balance"""
         if self.balance >= amount:
             self.balance -= amount
             self.save(update_fields=['balance', 'updated_at'])
+            cache.delete(f'user_balance_{self.user_id}')
             return True
         return False
 
@@ -177,7 +199,15 @@ class Product(models.Model):
         verbose_name_plural = 'Products'
 
     def __str__(self):
-        return f"{self.name} - {self.price}"  
+        return f"{self.name} - {self.price}"
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        cache.delete('all_products_cache')
+
+    def delete(self, *args, **kwargs):
+        super().delete(*args, **kwargs)
+        cache.delete('all_products_cache')
 
 
 class UserInvestment(models.Model):
@@ -441,6 +471,14 @@ class Task(models.Model):
     
     def __str__(self):
         return f"{self.title} - ₵{self.reward}"
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        cache.delete('active_tasks_cache')
+
+    def delete(self, *args, **kwargs):
+        super().delete(*args, **kwargs)
+        cache.delete('active_tasks_cache')
 
 
 class UserTask(models.Model):

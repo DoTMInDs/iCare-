@@ -11,7 +11,8 @@ from django.utils import timezone
 from django.utils.crypto import get_random_string
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
+from django.core.cache import cache
 from django.conf import settings
 from django.db import transaction, models
 from django.contrib import messages
@@ -45,14 +46,11 @@ def generate_referral_code():
 # Create your views here.
 @login_required
 def home(request):
-    user_balance, created = UserBalance.objects.get_or_create(
-        user=request.user,
-        defaults={'balance': 0, 'currency': 'GHS'}
-    )
+    user_balance = UserBalance.get_user_balance(request.user)
     context = {
         'user_balance': user_balance,
     }
-    return render(request, 'iCare/services/home.html',context)
+    return render(request, 'iCare/services/home.html', context)
 
 
 @login_required
@@ -497,11 +495,12 @@ def account_balance(request):
 @login_required
 def product(request):
     """Display available products and user investments"""
-    products = list(Product.objects.all().order_by('price'))
-    user_balance, created = UserBalance.objects.get_or_create(
-        user=request.user,
-        defaults={'balance': 0, 'currency': 'GHS'}
-    )
+    products = cache.get('all_products_cache')
+    if products is None:
+        products = list(Product.objects.all().order_by('price'))
+        cache.set('all_products_cache', products, timeout=900)
+        
+    user_balance = UserBalance.get_user_balance(request.user)
 
     saved_accounts = SavedAccount.objects.filter(user=request.user)
     
@@ -541,8 +540,11 @@ def product(request):
 @login_required
 def get_products_data(request):
     """AJAX endpoint to get all products data"""
-    products = Product.objects.all().values('id', 'name', 'price', 'description', 'term', 'daily_earnings', 'total_earnings')
-    return JsonResponse(list(products), safe=False)
+    products = cache.get('all_products_values_cache')
+    if products is None:
+        products = list(Product.objects.all().values('id', 'name', 'price', 'description', 'term', 'daily_earnings', 'total_earnings'))
+        cache.set('all_products_values_cache', products, timeout=900)
+    return JsonResponse(products, safe=False)
 
 @login_required
 def product_details(request):
@@ -555,7 +557,7 @@ def product_details(request):
         user_investments = UserInvestment.objects.filter(
             user=request.user,
             status__in=['active', 'pending', 'completed']
-        )
+        ).select_related('product')
         max_purchased_price = 0
         for inv in user_investments:
             if inv.product.price > max_purchased_price:
@@ -563,6 +565,13 @@ def product_details(request):
                 
         is_disabled = (product.price <= max_purchased_price)
         
+        if request.headers.get('HX-Request'):
+            context = {
+                'product': product,
+                'is_disabled': is_disabled,
+            }
+            return render(request, 'iCare/partials/product_details_partial.html', context)
+            
         data = {
             'id': str(product.id),
             'name': product.name,
@@ -575,6 +584,8 @@ def product_details(request):
         }
         return JsonResponse(data)
     except Product.DoesNotExist:
+        if request.headers.get('HX-Request'):
+            return HttpResponse('<div class="p-4 text-red-600">Product not found.</div>', status=404)
         return JsonResponse({'error': 'Product not found'}, status=404)
 
 
@@ -1046,10 +1057,13 @@ def tasks(request):
     from datetime import date as today_date
     today = today_date.today()
 
-    tasks_list = Task.objects.filter(is_active=True)
+    tasks_list = cache.get('active_tasks_cache')
+    if tasks_list is None:
+        tasks_list = list(Task.objects.filter(is_active=True))
+        cache.set('active_tasks_cache', tasks_list, timeout=900)
 
     # All user task records
-    user_task_records = UserTask.objects.filter(user=request.user)
+    user_task_records = UserTask.objects.filter(user=request.user).select_related('task')
 
     # Tasks completed today (for the 'Completed Today' badge)
     completed_today_ids = list(user_task_records.filter(
@@ -1073,8 +1087,8 @@ def tasks(request):
         'tasks': tasks_list,
         'completed_tasks': completed_today_ids,       # used by template for 'Completed Today'
         'completed_tasks_count': len(completed_today_ids),
-        'available_tasks_count': tasks_list.exclude(id__in=completed_today_ids).count(),
-        'total_tasks_count': tasks_list.count(),
+        'available_tasks_count': len([t for t in tasks_list if t.id not in completed_today_ids]),
+        'total_tasks_count': len(tasks_list),
         'total_task_earnings': UserTask.objects.filter(user=request.user, status='completed').aggregate(Sum('task__reward'))['task__reward__sum'] or 0,
         'checkin_streak': checkin.streak,
         'daily_bonus': daily_bonus,
@@ -1097,6 +1111,13 @@ def task_details(request):
             user=request.user, task=task, last_completed_date=today
         ).exists()
         
+        if request.headers.get('HX-Request'):
+            context = {
+                'task': task,
+                'already_done': already_done,
+            }
+            return render(request, 'iCare/partials/task_details_partial.html', context)
+            
         data = {
             'id': str(task.id),
             'title': task.title,
@@ -1109,6 +1130,8 @@ def task_details(request):
         }
         return JsonResponse(data)
     except Task.DoesNotExist:
+        if request.headers.get('HX-Request'):
+            return HttpResponse('<div class="p-4 text-red-600">Task not found.</div>', status=404)
         return JsonResponse({'error': 'Task not found'}, status=404)
 
 
@@ -1117,13 +1140,21 @@ def task_details(request):
 def complete_task(request):
     """Complete a task and credit reward — limited to once per day per task"""
     from datetime import date as today_date
-    data = json.loads(request.body)
-    task_id = data.get('task_id')
+    task_id = request.POST.get('task_id')
+    if not task_id:
+        try:
+            data = json.loads(request.body)
+            task_id = data.get('task_id')
+        except Exception:
+            pass
+            
     today = today_date.today()
     
     try:
         task = Task.objects.get(id=task_id)
     except Task.DoesNotExist:
+        if request.headers.get('HX-Request'):
+            return HttpResponse('<div class="p-4 text-red-600">Task not found.</div>', status=404)
         return JsonResponse({'success': False, 'message': 'Task not found'})
     
     # Check if already completed today
@@ -1131,6 +1162,12 @@ def complete_task(request):
         user=request.user, task=task, last_completed_date=today
     ).exists()
     if already_done:
+        if request.headers.get('HX-Request'):
+            context = {
+                'task': task,
+                'completed_tasks': [task.id],
+            }
+            return render(request, 'iCare/partials/task_card_partial.html', context)
         return JsonResponse({'success': False, 'message': 'You have already completed this task today. Come back tomorrow!'})
     
     with transaction.atomic():
@@ -1152,6 +1189,13 @@ def complete_task(request):
         )
         user_balance.add_balance(task.reward)
     
+    if request.headers.get('HX-Request'):
+        context = {
+            'task': task,
+            'completed_tasks': [task.id],
+        }
+        return render(request, 'iCare/partials/task_card_partial.html', context)
+        
     return JsonResponse({'success': True, 'message': 'Task completed!', 'reward': float(task.reward)})
 
 
@@ -1164,6 +1208,15 @@ def daily_checkin(request):
     
     # Check if already checked in today
     if checkin.last_checkin_date == date.today():
+        if request.headers.get('HX-Request'):
+            daily_bonus = 1.00 + (checkin.streak * 0.50)
+            if daily_bonus > 10: daily_bonus = 10
+            context = {
+                'checkin_streak': checkin.streak,
+                'daily_bonus': daily_bonus,
+                'checked_in_today': True,
+            }
+            return render(request, 'iCare/partials/daily_checkin_partial.html', context)
         return JsonResponse({'success': False, 'message': 'Already checked in today'})
     
     # Calculate bonus based on streak
@@ -1188,6 +1241,14 @@ def daily_checkin(request):
     )
     user_balance.add_balance(bonus)
     
+    if request.headers.get('HX-Request'):
+        context = {
+            'checkin_streak': checkin.streak,
+            'daily_bonus': bonus,
+            'checked_in_today': True,
+        }
+        return render(request, 'iCare/partials/daily_checkin_partial.html', context)
+        
     return JsonResponse({'success': True, 'message': 'Check-in successful!', 'bonus': float(bonus), 'streak': checkin.streak})
 
 
@@ -1532,8 +1593,14 @@ def member_details(request):
     """AJAX endpoint to get member details"""
     member_id = request.GET.get('id')
     try:
-        member = User.objects.get(id=member_id)
-        team_member = TeamMember.objects.get(user=member)
+        if member_id in ['left', 'right']:
+            team_member = TeamMember.objects.filter(sponsor=request.user, position=member_id).first()
+            if not team_member:
+                raise TeamMember.DoesNotExist
+            member = team_member.user
+        else:
+            member = User.objects.get(id=member_id)
+            team_member = TeamMember.objects.get(user=member)
         
         total_investment = UserInvestment.objects.filter(
             user=member,
@@ -1549,6 +1616,12 @@ def member_details(request):
             'total_investment': f"{float(total_investment):,.2f}",
             'team_count': UserReferral.objects.filter(referrer=member).count(),
         }
+        
+        if request.headers.get('HX-Request'):
+            return render(request, 'iCare/partials/member_details_partial.html', data)
+            
         return JsonResponse(data)
-    except (User.DoesNotExist, TeamMember.DoesNotExist):
+    except (User.DoesNotExist, TeamMember.DoesNotExist, ValueError):
+        if request.headers.get('HX-Request'):
+            return HttpResponse('<div class="p-4 text-red-600">Member not found.</div>', status=404)
         return JsonResponse({'error': 'Member not found'}, status=404)

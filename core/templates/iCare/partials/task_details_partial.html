@@ -1,0 +1,52 @@
+{% load humanize %}
+<div class="space-y-4">
+    <div class="bg-blue-50 rounded-xl p-4">
+        <p class="text-sm text-gray-700">Reward:</p>
+        <p class="text-2xl font-bold text-green-600">₵{{ task.reward|floatformat:2|intcomma }}</p>
+    </div>
+    
+    <div>
+        <h4 class="font-semibold text-gray-700 mb-2">Instructions</h4>
+        <p class="text-sm text-gray-600 leading-relaxed">{{ task.instructions|default:"Follow the steps below to complete this task:" }}</p>
+    </div>
+    
+    <div class="bg-gray-50 rounded-xl p-4">
+        <h4 class="font-semibold text-gray-700 mb-3">Steps to complete:</h4>
+        <ol class="space-y-2 text-sm text-gray-600 list-decimal list-inside">
+            {% for step in task.steps %}
+                <li>{{ step }}</li>
+            {% empty %}
+                <li>Click the button below to start</li>
+            {% endfor %}
+        </ol>
+    </div>
+    
+    {% if task.task_url %}
+    <div class="bg-purple-50 rounded-xl p-4">
+        <p class="text-sm text-gray-700 mb-2">Task Link:</p>
+        <a href="{{ task.task_url }}" target="_blank" class="text-blue-600 break-all hover:underline">{{ task.task_url }}</a>
+    </div>
+    {% endif %}
+    
+    <div class="bg-yellow-50 rounded-xl p-3 text-xs text-yellow-800">
+        <div class="flex items-start gap-2">
+            <svg class="w-4 h-4 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <span>Complete the task as described. Your reward will be credited after verification.</span>
+        </div>
+    </div>
+
+    <!-- Action Button Container -->
+    <div class="pt-4 border-t border-gray-100 mt-4">
+        {% if already_done %}
+            <button disabled class="w-full py-3 bg-gray-200 text-gray-400 rounded-xl font-medium cursor-not-allowed">
+                ✅ Done Today (Resets Tomorrow)
+            </button>
+        {% else %}
+            <button hx-post="{% url 'complete_task' %}" hx-vals='{"task_id": "{{ task.id }}"}' hx-target="#task-card-{{ task.id }}" hx-swap="outerHTML" onclick="closeTaskModal(); alert('Task completed successfully! Reward credited to your wallet.');" class="w-full py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-medium hover:from-blue-700 hover:to-blue-800 transition shadow-md">
+                Complete Task
+            </button>
+        {% endif %}
+    </div>
+</div>

@@ -1,0 +1,30 @@
+<div class="space-y-4">
+    <div class="flex items-center gap-4">
+        <div class="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center">
+            <span class="text-white text-xl font-bold">{{ name|slice:":1" }}</span>
+        </div>
+        <div>
+            <h4 class="font-semibold text-gray-900">{{ name }}</h4>
+            <p class="text-sm text-gray-500">{{ phone }}</p>
+        </div>
+    </div>
+    
+    <div class="grid grid-cols-2 gap-3">
+        <div class="bg-gray-50 rounded-xl p-3 text-center">
+            <p class="text-xs text-gray-500">Joined Date</p>
+            <p class="font-semibold text-gray-900">{{ joined_date }}</p>
+        </div>
+        <div class="bg-gray-50 rounded-xl p-3 text-center">
+            <p class="text-xs text-gray-500">Position</p>
+            <p class="font-semibold text-gray-900">{{ position }}</p>
+        </div>
+        <div class="bg-gray-50 rounded-xl p-3 text-center">
+            <p class="text-xs text-gray-500">Total Investment</p>
+            <p class="font-semibold text-green-600">₵{{ total_investment }}</p>
+        </div>
+        <div class="bg-gray-50 rounded-xl p-3 text-center">
+            <p class="text-xs text-gray-500">Team Count</p>
+            <p class="font-semibold text-blue-600">{{ team_count }}</p>
+        </div>
+    </div>
+</div>

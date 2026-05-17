@@ -3,7 +3,7 @@
     <div class="flex justify-around items-center px-2 pt-2 pb-6 max-w-lg mx-auto ">
         
         <!-- Home -->
-        <a href="{% url 'home' %}" class="flex flex-col items-center gap-0 group">
+        <a href="{% url 'home' %}" hx-get="{% url 'home' %}" hx-target="body" hx-push-url="true" hx-swap="outerHTML" class="flex flex-col items-center gap-0 group">
             <div class="p-2 rounded-xl transition-all duration-200 group-hover:bg-blue-100">
                 <svg class="h-6 w-6 text-gray-600 group-hover:text-blue-600 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
@@ -13,7 +13,7 @@
         </a>
 
         <!-- Product -->
-        <a href="{% url "product" %}" class="flex flex-col items-center gap-0 group">
+        <a href="{% url 'product' %}" hx-get="{% url 'product' %}" hx-target="body" hx-push-url="true" hx-swap="outerHTML" class="flex flex-col items-center gap-0 group">
             <div class="p-2 rounded-xl transition-all duration-200 group-hover:bg-purple-100">
                 <svg class="h-6 w-6 text-gray-600 group-hover:text-purple-600 transition-colors duration-200" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M8 8V7C8 5.93913 8.42143 4.92172 9.17157 4.17157C9.92172 3.42143 10.9391 3 12 3C13.0609 3 14.0783 3.42143 14.8284 4.17157C15.5786 4.92172 16 5.93913 16 7V8M15 14V12M9 14V12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
@@ -24,7 +24,7 @@
         </a>
 
         <!-- Team -->
-        <a href="{% url "team" %}" class="flex flex-col items-center gap-0 group">
+        <a href="{% url 'team' %}" hx-get="{% url 'team' %}" hx-target="body" hx-push-url="true" hx-swap="outerHTML" class="flex flex-col items-center gap-0 group">
             <div class="p-2 rounded-xl transition-all duration-200 group-hover:bg-green-100">
                 <svg class="h-6 w-6 text-gray-600 group-hover:text-green-600 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
@@ -34,7 +34,7 @@
         </a>
 
         <!-- Profile -->
-        <a href="{% url "profile" %}" class="flex flex-col items-center gap-0 group">
+        <a href="{% url 'profile' %}" hx-get="{% url 'profile' %}" hx-target="body" hx-push-url="true" hx-swap="outerHTML" class="flex flex-col items-center gap-0 group">
             <div class="p-2 rounded-xl transition-all duration-200 group-hover:bg-orange-100">
                 <svg class="h-6 w-6 text-gray-600 group-hover:text-orange-600 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
@@ -47,29 +47,36 @@
 
 <!-- Active State Example (JavaScript to highlight current page) -->
 <script>
-    // Get current page URL
-    const currentPath = window.location.pathname;
+    function updateNavActiveState() {
+        const currentPath = window.location.pathname;
+        const navItems = [
+            { element: document.querySelector('a[href*="home"]'), path: '/home', activeColor: 'text-blue-600', bgColor: 'bg-blue-200' },
+            { element: document.querySelector('a[href*="product"]'), path: '/product', activeColor: 'text-purple-600', bgColor: 'bg-purple-200' },
+            { element: document.querySelector('a[href*="team"]'), path: '/team', activeColor: 'text-green-600', bgColor: 'bg-green-200' },
+            { element: document.querySelector('a[href*="profile"]'), path: '/profile', activeColor: 'text-orange-600', bgColor: 'bg-orange-200' }
+        ];
+        
+        navItems.forEach(item => {
+            if (item.element) {
+                const icon = item.element.querySelector('svg');
+                const text = item.element.querySelector('span');
+                const div = item.element.querySelector('div');
+                
+                if (currentPath.includes(item.path)) {
+                    if (icon) icon.classList.add(item.activeColor);
+                    if (text) text.classList.add(item.activeColor);
+                    if (div) div.classList.add(item.bgColor);
+                } else {
+                    if (icon) icon.classList.remove(item.activeColor);
+                    if (text) text.classList.remove(item.activeColor);
+                    if (div) div.classList.remove(item.bgColor);
+                }
+            }
+        });
+    }
     
-    // Define mappings for each nav item
-    const navItems = [
-        { element: document.querySelector('a[href*="home"]'), path: '/home', activeColor: 'text-blue-600', bgColor: 'bg-blue-200' },
-        { element: document.querySelector('a[href*="product"]'), path: '/product', activeColor: 'text-purple-600', bgColor: 'bg-purple-200' },
-        { element: document.querySelector('a[href*="team"]'), path: '/team', activeColor: 'text-green-600', bgColor: 'bg-green-200' },
-        { element: document.querySelector('a[href*="profile"]'), path: '/profile', activeColor: 'text-orange-600', bgColor: 'bg-orange-200' }
-    ];
-    
-    // Add active class to current page
-    navItems.forEach(item => {
-        if (item.element && currentPath.includes(item.path)) {
-            const icon = item.element.querySelector('svg');
-            const text = item.element.querySelector('span');
-            const div = item.element.querySelector('div');
-            
-            if (icon) icon.classList.add(item.activeColor);
-            if (text) text.classList.add(item.activeColor);
-            if (div) div.classList.add(item.bgColor);
-        }
-    });
+    updateNavActiveState();
+    document.body.addEventListener('htmx:afterSwap', updateNavActiveState);
 </script>
 
 <style>
