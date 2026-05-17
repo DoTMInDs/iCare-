@@ -1092,6 +1092,7 @@ def complete_task(request):
 @require_http_methods(['POST'])
 def daily_checkin(request):
     """Handle daily check-in bonus"""
+    from decimal import Decimal
     checkin, created = UserCheckin.objects.get_or_create(user=request.user)
     
     # Check if already checked in today
@@ -1104,16 +1105,17 @@ def daily_checkin(request):
     else:
         checkin.streak = 1
     
-    bonus = 1.00 + (min(checkin.streak, 10) * 0.50)
-    if bonus > 10:
-        bonus = 10
+    # Use Decimal to avoid type errors when adding to DecimalField
+    bonus = Decimal('1.00') + (Decimal(min(checkin.streak, 10)) * Decimal('0.50'))
+    if bonus > Decimal('10'):
+        bonus = Decimal('10')
     
     checkin.last_checkin_date = date.today()
     checkin.total_checkins += 1
     checkin.save()
     
     # Credit bonus to wallet
-    user_balance, created = UserBalance.objects.get_or_create(
+    user_balance, _ = UserBalance.objects.get_or_create(
         user=request.user,
         defaults={'balance': 0, 'currency': 'GHS'}
     )
