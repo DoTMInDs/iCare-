@@ -147,6 +147,9 @@ def signup(request):
             if referral_code:
                 process_referral_on_signup(new_user, referral_code)
             
+            # Log the user in immediately after signup
+            login(request, new_user, backend='iCare_auth.backends.PhoneNumberBackend')
+            
             return redirect('home')
         else:
             for field, errors in form.errors.items():

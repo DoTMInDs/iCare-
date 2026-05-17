@@ -270,7 +270,8 @@ function closeNotification(type) {
 // Auto-format phone number
 document.getElementById('phone')?.addEventListener('input', function(e) {
     let value = e.target.value.replace(/\D/g, '');
-    if (value.length > 9) value = value.slice(0, 9);
+    const maxLength = value.startsWith('0') ? 10 : 9;
+    if (value.length > maxLength) value = value.slice(0, maxLength);
     e.target.value = value;
 });
 
@@ -280,9 +281,10 @@ document.getElementById('signup-form')?.addEventListener('submit', function(e) {
     const password = document.getElementById('password').value;
     const password2 = document.getElementById('password2').value;
     
-    if (!phone || phone.length < 9) {
+    const minLength = phone.startsWith('0') ? 10 : 9;
+    if (!phone || phone.length < minLength) {
         e.preventDefault();
-        showNotification('error', 'Invalid Phone', 'Please enter a valid 9-digit phone number');
+        showNotification('error', 'Invalid Phone', `Please enter a valid ${minLength}-digit phone number`);
         return false;
     }
     
