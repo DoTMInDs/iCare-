@@ -594,6 +594,14 @@ def purchase_product(request):
                 
                 
                 print(f"Wallet payment successful! Investment ID: {investment.id}")
+                
+                # Process commissions and team volumes
+                process_referral_commission.delay(investment.id)
+                update_team_volumes.delay(request.user.id)
+                
+                # Send push notification
+                send_product_purchase_notification.delay(request.user.id, product.name)
+                
                 messages.success(request, f'Successfully purchased {product.name}! Your investment is now active.')
                 return redirect('my_investments')
         else:
@@ -689,9 +697,6 @@ def purchase_product(request):
                     'transaction_id': str(product_transaction.id),
                     'amount': str(product.price),
                 }
-                process_referral_commission.delay(investment.id)
-
-                update_team_volumes.delay(request.user.id)
                 
                 # Redirect to Paystack payment page
                 return redirect(result['authorization_url'])
@@ -761,6 +766,10 @@ def product_payment_callback(request):
                         transaction_reference=product_transaction.reference  # This now exists
                     )
                     print(f"Investment created: {investment.id}")
+                    
+                    # Process commissions and team volumes
+                    process_referral_commission.delay(investment.id)
+                    update_team_volumes.delay(request.user.id)
                     
                     # Send push notification
                     send_product_purchase_notification.delay(request.user.id, product_transaction.product.name)
@@ -840,13 +849,17 @@ def product_payment_webhook(request):
                         product_transaction.mark_success()
                         
                         # Create investment
-                        UserInvestment.objects.create(
+                        investment = UserInvestment.objects.create(
                             user=product_transaction.user,
                             product=product_transaction.product,
                             amount=product_transaction.amount,
                             status='active',
                             transaction_reference=product_transaction.reference
                         )
+                        
+                        # Process commissions and team volumes
+                        process_referral_commission.delay(investment.id)
+                        update_team_volumes.delay(product_transaction.user.id)
                         
                         # Send push notification
                         send_product_purchase_notification.delay(product_transaction.user.id, product_transaction.product.name)
