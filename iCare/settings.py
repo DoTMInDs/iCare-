@@ -473,6 +473,11 @@ LOGGING = {
             'level': 'WARNING',
             'propagate': False,
         },
+        'asgiref.sync': {
+            'handlers': ['console'],
+            'level': 'CRITICAL',
+            'propagate': False,
+        },
     },
 }
 
