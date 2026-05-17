@@ -1052,9 +1052,9 @@ def tasks(request):
     user_task_records = UserTask.objects.filter(user=request.user)
 
     # Tasks completed today (for the 'Completed Today' badge)
-    completed_today_ids = user_task_records.filter(
+    completed_today_ids = list(user_task_records.filter(
         last_completed_date=today
-    ).values_list('task_id', flat=True)
+    ).values_list('task_id', flat=True))
 
     # All-time completed count (for stats banner)
     all_time_completed = user_task_records.filter(status='completed').values_list('task_id', flat=True)
@@ -1091,6 +1091,12 @@ def task_details(request):
     task_id = request.GET.get('id')
     try:
         task = Task.objects.get(id=task_id)
+        from datetime import date as today_date
+        today = today_date.today()
+        already_done = UserTask.objects.filter(
+            user=request.user, task=task, last_completed_date=today
+        ).exists()
+        
         data = {
             'id': str(task.id),
             'title': task.title,
@@ -1099,6 +1105,7 @@ def task_details(request):
             'steps': task.steps,
             'task_url': task.task_url,
             'reward': float(task.reward),
+            'already_done': already_done,
         }
         return JsonResponse(data)
     except Task.DoesNotExist:
