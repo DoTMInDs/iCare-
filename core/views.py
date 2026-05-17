@@ -1002,8 +1002,21 @@ def saved_payment_methods(request):
 @login_required
 def tasks(request):
     """Display tasks and user progress"""
+    from datetime import date as today_date
+    today = today_date.today()
+
     tasks_list = Task.objects.filter(is_active=True)
-    user_tasks = UserTask.objects.filter(user=request.user, status='completed').values_list('task_id', flat=True)
+
+    # All user task records
+    user_task_records = UserTask.objects.filter(user=request.user)
+
+    # Tasks completed today (for the 'Completed Today' badge)
+    completed_today_ids = user_task_records.filter(
+        last_completed_date=today
+    ).values_list('task_id', flat=True)
+
+    # All-time completed count (for stats banner)
+    all_time_completed = user_task_records.filter(status='completed').values_list('task_id', flat=True)
     
     # Get or create checkin record
     checkin, created = UserCheckin.objects.get_or_create(user=request.user)
@@ -1013,13 +1026,13 @@ def tasks(request):
     if daily_bonus > 10:
         daily_bonus = 10
     
-    checked_in_today = checkin.last_checkin_date == date.today()
+    checked_in_today = checkin.last_checkin_date == today
     
     context = {
         'tasks': tasks_list,
-        'completed_tasks': user_tasks,
-        'completed_tasks_count': user_tasks.count(),
-        'available_tasks_count': tasks_list.exclude(id__in=user_tasks).count(),
+        'completed_tasks': completed_today_ids,       # used by template for 'Completed Today'
+        'completed_tasks_count': len(completed_today_ids),
+        'available_tasks_count': tasks_list.exclude(id__in=completed_today_ids).count(),
         'total_tasks_count': tasks_list.count(),
         'total_task_earnings': UserTask.objects.filter(user=request.user, status='completed').aggregate(Sum('task__reward'))['task__reward__sum'] or 0,
         'checkin_streak': checkin.streak,
@@ -1054,27 +1067,33 @@ def task_details(request):
 @login_required
 @require_http_methods(['POST'])
 def complete_task(request):
-    """Complete a task and credit reward"""
+    """Complete a task and credit reward — limited to once per day per task"""
+    from datetime import date as today_date
     data = json.loads(request.body)
     task_id = data.get('task_id')
+    today = today_date.today()
     
     try:
         task = Task.objects.get(id=task_id)
     except Task.DoesNotExist:
         return JsonResponse({'success': False, 'message': 'Task not found'})
     
-    # Check if task already completed
-    if UserTask.objects.filter(user=request.user, task=task, status='completed').exists():
-        return JsonResponse({'success': False, 'message': 'Task already completed'})
+    # Check if already completed today
+    already_done = UserTask.objects.filter(
+        user=request.user, task=task, last_completed_date=today
+    ).exists()
+    if already_done:
+        return JsonResponse({'success': False, 'message': 'You have already completed this task today. Come back tomorrow!'})
     
     with transaction.atomic():
-        # Update or create user task record
+        # Update or create user task record, resetting for today
         user_task, created = UserTask.objects.update_or_create(
             user=request.user,
             task=task,
             defaults={
                 'status': 'completed',
-                'completed_at': timezone.now()
+                'completed_at': timezone.now(),
+                'last_completed_date': today,
             }
         )
         

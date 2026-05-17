@@ -459,6 +459,7 @@ class UserTask(models.Model):
     task = models.ForeignKey(Task, on_delete=models.CASCADE)
     status = models.CharField(max_length=16, choices=STATUS_CHOICES, default='pending')
     completed_at = models.DateTimeField(blank=True, null=True)
+    last_completed_date = models.DateField(blank=True, null=True, help_text='Date task was last completed. Used to enforce one completion per day.')
     created_at = models.DateTimeField(auto_now_add=True)
     
     class Meta:
@@ -466,7 +467,11 @@ class UserTask(models.Model):
         ordering = ['-created_at']
     
     def __str__(self):
-        return f"{self.user.email} - {self.task.title} - {self.status}"
+        return f"{self.user.phone_number} - {self.task.title} - {self.status}"
+
+    def completed_today(self):
+        from datetime import date
+        return self.last_completed_date == date.today()
 
 
 class UserCheckin(models.Model):
