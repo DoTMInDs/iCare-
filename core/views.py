@@ -497,7 +497,7 @@ def account_balance(request):
 @login_required
 def product(request):
     """Display available products and user investments"""
-    products = Product.objects.all()
+    products = list(Product.objects.all().order_by('price'))
     user_balance, created = UserBalance.objects.get_or_create(
         user=request.user,
         defaults={'balance': 0, 'currency': 'GHS'}
@@ -505,14 +505,27 @@ def product(request):
 
     saved_accounts = SavedAccount.objects.filter(user=request.user)
     
-    # Get user's active investments
+    # Get user's investments
     user_investments = UserInvestment.objects.filter(
         user=request.user,
-        status__in=['active', 'pending']
-    ).select_related('product')[:5]
+        status__in=['active', 'pending', 'completed']
+    ).select_related('product')
+    
+    # Find max purchased price
+    max_purchased_price = 0
+    for inv in user_investments:
+        if inv.product.price > max_purchased_price:
+            max_purchased_price = inv.product.price
+            
+    # Mark products as disabled if price <= max_purchased_price
+    for p in products:
+        p.is_disabled = (p.price <= max_purchased_price)
+        
+    # Get user's active investments for display
+    display_investments = [inv for inv in user_investments if inv.status in ['active', 'pending']][:5]
     
     # Calculate progress for each investment
-    for investment in user_investments:
+    for investment in display_investments:
         investment.total_earned = investment.calculate_earned_so_far()
         investment.days_remaining = investment.get_days_remaining()
         investment.progress_percentage = investment.get_progress_percentage()
@@ -520,7 +533,7 @@ def product(request):
     context = {
         'products': products,
         'user_balance': user_balance,
-        'user_investments': user_investments,
+        'user_investments': display_investments,
         'saved_accounts': saved_accounts,
     }
     return render(request, 'iCare/services/product.html', context)
@@ -537,6 +550,19 @@ def product_details(request):
     product_id = request.GET.get('id')
     try:
         product = Product.objects.get(id=product_id)
+        
+        # Check if disabled
+        user_investments = UserInvestment.objects.filter(
+            user=request.user,
+            status__in=['active', 'pending', 'completed']
+        )
+        max_purchased_price = 0
+        for inv in user_investments:
+            if inv.product.price > max_purchased_price:
+                max_purchased_price = inv.product.price
+                
+        is_disabled = (product.price <= max_purchased_price)
+        
         data = {
             'id': str(product.id),
             'name': product.name,
@@ -545,6 +571,7 @@ def product_details(request):
             'term': product.term,
             'daily_earnings': float(product.daily_earnings) if product.daily_earnings else None,
             'total_earnings': float(product.total_earnings) if product.total_earnings else None,
+            'is_disabled': is_disabled,
         }
         return JsonResponse(data)
     except Product.DoesNotExist:
@@ -579,6 +606,20 @@ def purchase_product(request):
     # Enforce wallet-only purchases — reject any non-wallet payment attempt
     if payment_method_type != 'wallet':
         messages.error(request, 'Purchases must be made using your wallet balance. Please recharge your wallet first.')
+        return redirect('product')
+
+    # Check if user has already purchased this package or a higher package
+    user_investments = UserInvestment.objects.filter(
+        user=request.user,
+        status__in=['active', 'pending', 'completed']
+    )
+    max_purchased_price = 0
+    for inv in user_investments:
+        if inv.product.price > max_purchased_price:
+            max_purchased_price = inv.product.price
+            
+    if product.price <= max_purchased_price:
+        messages.error(request, 'You have already purchased this package or a higher level package.')
         return redirect('product')
 
     # Process wallet payment

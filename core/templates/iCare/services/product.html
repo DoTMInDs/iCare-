@@ -55,7 +55,7 @@
         <!-- Products Grid -->
         <div class="space-y-4" id="products-container">
             {% for product in products %}
-            <div class="product-card bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-all duration-300" 
+            <div class="product-card bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-all duration-300 {% if product.is_disabled %}opacity-60 bg-gray-50{% endif %}" 
                  data-price="{{ product.price }}">
                 
                 <!-- Product Header -->
@@ -114,9 +114,15 @@
                     <button onclick="showProductDetails('{{ product.id }}')" class="flex-1 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200 transition">
                         View Details
                     </button>
+                    {% if product.is_disabled %}
+                    <button disabled class="flex-1 py-2.5 text-sm font-medium text-gray-400 bg-gray-200 rounded-xl cursor-not-allowed">
+                        Purchased / Locked
+                    </button>
+                    {% else %}
                     <button onclick="showPurchaseModal('{{ product.id }}', '{{ product.name }}', {{ product.price }})" class="flex-1 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl hover:from-blue-700 hover:to-blue-800 transition shadow-md">
                         Purchase
                     </button>
+                    {% endif %}
                 </div>
             </div>
             {% empty %}
@@ -433,6 +439,22 @@
         fetch(`{% url "product_details" %}?id=${productId}`)
             .then(response => response.json())
             .then(product => {
+                let actionButtonHtml = '';
+                if (product.is_disabled) {
+                    actionButtonHtml = `
+                        <button disabled class="w-full py-3 bg-gray-200 text-gray-400 rounded-xl font-medium cursor-not-allowed">
+                            Purchased / Locked
+                        </button>
+                    `;
+                } else {
+                    actionButtonHtml = `
+                        <button onclick="closeProductModal(); showPurchaseModal('${product.id}', '${product.name}', ${product.price})" 
+                                class="w-full py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-medium hover:from-blue-700 hover:to-blue-800 transition shadow-md">
+                            Purchase Now
+                        </button>
+                    `;
+                }
+                
                 content.innerHTML = `
                     <div class="space-y-4">
                         <div class="bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl p-4">
@@ -460,10 +482,7 @@
                             </div>
                         </div>
                         
-                        <button onclick="closeProductModal(); showPurchaseModal('${product.id}', '${product.name}', ${product.price})" 
-                                class="w-full py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-medium hover:from-blue-700 hover:to-blue-800 transition shadow-md">
-                            Purchase Now
-                        </button>
+                        ${actionButtonHtml}
                     </div>
                 `;
                 modal.classList.remove('hidden');
