@@ -31,9 +31,9 @@ from core.tasks import (
     update_team_volumes
 )
 from .tasks import (
-    process_daily_earnings, process_referral_commissions, 
-    update_binary_tree_volumes, send_commission_notification,
-    send_withdrawal_notification, send_recharge_notification,
+    send_commission_notification,
+    send_withdrawal_notification, 
+    send_recharge_notification,
     send_product_purchase_notification
 )
 
