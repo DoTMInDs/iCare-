@@ -1094,6 +1094,7 @@ def tasks(request):
     context = {
         'tasks': tasks_list,
         'completed_tasks': completed_today_ids,       # used by template for 'Completed Today'
+        'has_completed_any_today': len(completed_today_ids) > 0,
         'completed_tasks_count': len(completed_today_ids),
         'available_tasks_count': len([t for t in tasks_list if t.id not in completed_today_ids]),
         'total_tasks_count': len(tasks_list),
@@ -1118,11 +1119,15 @@ def task_details(request):
         already_done = UserTask.objects.filter(
             user=request.user, task=task, last_completed_date=today
         ).exists()
+        has_completed_any_today = UserTask.objects.filter(
+            user=request.user, last_completed_date=today
+        ).exists()
         
         if request.headers.get('HX-Request'):
             context = {
                 'task': task,
                 'already_done': already_done,
+                'has_completed_any_today': has_completed_any_today,
             }
             return render(request, 'iCare/partials/task_details_partial.html', context)
             
@@ -1135,6 +1140,7 @@ def task_details(request):
             'task_url': task.task_url,
             'reward': float(task.reward),
             'already_done': already_done,
+            'has_completed_any_today': has_completed_any_today,
         }
         return JsonResponse(data)
     except Task.DoesNotExist:
@@ -1146,7 +1152,7 @@ def task_details(request):
 @login_required
 @require_http_methods(['POST'])
 def complete_task(request):
-    """Complete a task and credit reward — limited to once per day per task"""
+    """Complete a task and credit reward — limited to once per day per task/user"""
     from datetime import date as today_date
     task_id = request.POST.get('task_id')
     if not task_id:
@@ -1165,18 +1171,28 @@ def complete_task(request):
             return HttpResponse('<div class="p-4 text-red-600">Task not found.</div>', status=404)
         return JsonResponse({'success': False, 'message': 'Task not found'})
     
-    # Check if already completed today
+    # Check if already completed today or if ANY task completed today (1 task per day rule)
     already_done = UserTask.objects.filter(
         user=request.user, task=task, last_completed_date=today
     ).exists()
-    if already_done:
+    has_completed_any_today = UserTask.objects.filter(
+        user=request.user, last_completed_date=today
+    ).exists()
+
+    if already_done or has_completed_any_today:
         if request.headers.get('HX-Request'):
+            tasks_list = cache.get('active_tasks_cache')
+            if tasks_list is None:
+                tasks_list = list(Task.objects.filter(is_active=True))
+                cache.set('active_tasks_cache', tasks_list, timeout=900)
+            completed_today_ids = list(UserTask.objects.filter(user=request.user, last_completed_date=today).values_list('task_id', flat=True))
             context = {
-                'task': task,
-                'completed_tasks': [task.id],
+                'tasks': tasks_list,
+                'completed_tasks': completed_today_ids,
+                'has_completed_any_today': True,
             }
-            return render(request, 'iCare/partials/task_card_partial.html', context)
-        return JsonResponse({'success': False, 'message': 'You have already completed this task today. Come back tomorrow!'})
+            return render(request, 'iCare/partials/tasks_list_partial.html', context)
+        return JsonResponse({'success': False, 'message': 'You have already completed a task today. Come back tomorrow!'})
     
     with transaction.atomic():
         # Update or create user task record, resetting for today
@@ -1198,11 +1214,17 @@ def complete_task(request):
         user_balance.add_balance(task.reward)
     
     if request.headers.get('HX-Request'):
+        tasks_list = cache.get('active_tasks_cache')
+        if tasks_list is None:
+            tasks_list = list(Task.objects.filter(is_active=True))
+            cache.set('active_tasks_cache', tasks_list, timeout=900)
+        completed_today_ids = list(UserTask.objects.filter(user=request.user, last_completed_date=today).values_list('task_id', flat=True))
         context = {
-            'task': task,
-            'completed_tasks': [task.id],
+            'tasks': tasks_list,
+            'completed_tasks': completed_today_ids,
+            'has_completed_any_today': True,
         }
-        return render(request, 'iCare/partials/task_card_partial.html', context)
+        return render(request, 'iCare/partials/tasks_list_partial.html', context)
         
     return JsonResponse({'success': True, 'message': 'Task completed!', 'reward': float(task.reward)})
 

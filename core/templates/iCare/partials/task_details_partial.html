@@ -43,8 +43,12 @@
             <button disabled class="w-full py-3 bg-gray-200 text-gray-400 rounded-xl font-medium cursor-not-allowed">
                 ✅ Done Today (Resets Tomorrow)
             </button>
+        {% elif has_completed_any_today %}
+            <button disabled class="w-full py-3 bg-gray-100 text-gray-400 rounded-xl font-medium cursor-not-allowed">
+                🔒 Locked (1 Task Per Day)
+            </button>
         {% else %}
-            <button hx-post="{% url 'complete_task' %}" hx-vals='{"task_id": "{{ task.id }}"}' hx-target="#task-card-{{ task.id }}" hx-swap="outerHTML" onclick="closeTaskModal(); alert('Task completed successfully! Reward credited to your wallet.');" class="w-full py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-medium hover:from-blue-700 hover:to-blue-800 transition shadow-md">
+            <button hx-post="{% url 'complete_task' %}" hx-vals='{"task_id": "{{ task.id }}"}' hx-target="#tasks-container" hx-swap="innerHTML" onclick="closeTaskModal(); alert('Task completed successfully! Reward credited to your wallet.');" class="w-full py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-medium hover:from-blue-700 hover:to-blue-800 transition shadow-md">
                 Complete Task
             </button>
         {% endif %}
