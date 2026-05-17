@@ -1168,12 +1168,14 @@ def complete_task(request):
         return JsonResponse({'success': False, 'message': 'Task already completed'})
     
     with transaction.atomic():
-        # Create user task record
-        user_task = UserTask.objects.create(
+        # Update or create user task record
+        user_task, created = UserTask.objects.update_or_create(
             user=request.user,
             task=task,
-            status='completed',
-            completed_at=timezone.now()
+            defaults={
+                'status': 'completed',
+                'completed_at': timezone.now()
+            }
         )
         
         # Credit reward to wallet
