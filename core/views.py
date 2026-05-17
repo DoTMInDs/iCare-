@@ -576,142 +576,42 @@ def purchase_product(request):
         defaults={'balance': 0, 'currency': 'GHS'}
     )
     
-    # Handle wallet payment directly
-    if payment_method_type == 'wallet':
-        print("Processing wallet payment...")
-        if user_balance.balance >= product.price:
-            with transaction.atomic():
-                # Deduct from wallet
-                user_balance.deduct_balance(product.price)
-                
-                # Create investment record
-                investment = UserInvestment.objects.create(
-                    user=request.user,
-                    product=product,
-                    amount=product.price,
-                    status='active'
-                )
-                
-                
-                print(f"Wallet payment successful! Investment ID: {investment.id}")
-                
-                # Process commissions and team volumes
-                process_referral_commission.delay(investment.id)
-                update_team_volumes.delay(request.user.id)
-                
-                # Send push notification
-                send_product_purchase_notification.delay(request.user.id, product.name)
-                
-                messages.success(request, f'Successfully purchased {product.name}! Your investment is now active.')
-                return redirect('my_investments')
-        else:
-            print(f"Insufficient balance. Balance: {user_balance.balance}, Price: {product.price}")
-            messages.error(request, 'Insufficient balance. Please recharge your wallet or select another payment method.')
-            return redirect('product')
-    
-    # Handle Paystack payment for card or mobile money from saved accounts
-    else:
-        print(f"Processing Paystack payment for saved {payment_method_type} account...")
-        
-        # Generate unique reference
-        reference = 'P' + timezone.now().strftime('%y%m%d%H%M%S') + get_random_string(5, '0123456789')
-        print(f"Generated reference: {reference}")
-        
-        try:
-            paystack_service = PaystackService()
+    # Enforce wallet-only purchases — reject any non-wallet payment attempt
+    if payment_method_type != 'wallet':
+        messages.error(request, 'Purchases must be made using your wallet balance. Please recharge your wallet first.')
+        return redirect('product')
+
+    # Process wallet payment
+    print("Processing wallet payment...")
+    if user_balance.balance >= product.price:
+        with transaction.atomic():
+            # Deduct from wallet
+            user_balance.deduct_balance(product.price)
             
-            # Generate email for Paystack
-            if request.user.email:
-                user_email = request.user.email
-            else:
-                phone_digits = ''.join(filter(str.isdigit, str(request.user.phone_number)))
-                user_email = f"user{phone_digits[-6:]}@icare.com"
-            
-            print(f"User email: {user_email}")
-            
-            # IMPORTANT: Set the callback URL
-            callback_url = request.build_absolute_uri(reverse('product_payment_callback'))
-            print(f"Callback URL: {callback_url}")
-            
-            # Get saved account details if it's a saved payment method
-            saved_account = None
-            if payment_method_id and payment_method_id != 'wallet':
-                try:
-                    saved_account = SavedAccount.objects.get(id=payment_method_id, user=request.user)
-                    print(f"Found saved account: {saved_account}")
-                except SavedAccount.DoesNotExist:
-                    print(f"Saved account not found: {payment_method_id}")
-            
-            # Prepare metadata
-            metadata = {
-                'user_id': str(request.user.id),
-                'product_id': str(product.id),
-                'product_name': product.name,
-                'payment_type': 'product_purchase',
-                'payment_method_type': payment_method_type,
-            }
-            
-            # Add saved account info to metadata if available
-            if saved_account:
-                metadata['saved_account_id'] = str(saved_account.id)
-                metadata['saved_account_type'] = saved_account.account_type
-                if saved_account.account_type == 'mobile_money':
-                    metadata['phone_number'] = saved_account.phone_number
-                    metadata['network'] = saved_account.network
-                else:
-                    metadata['bank_name'] = saved_account.bank_name
-                    metadata['account_number'] = saved_account.account_number
-            
-            # Initialize payment with Paystack
-            result = paystack_service.initialize_payment(
-                email=user_email,
-                amount=float(product.price),
-                reference=reference,
-                callback_url=callback_url,
-                metadata=metadata
+            # Create investment record
+            investment = UserInvestment.objects.create(
+                user=request.user,
+                product=product,
+                amount=product.price,
+                status='active'
             )
             
-            print(f"Paystack initialization result: {result}")
+            print(f"Wallet payment successful! Investment ID: {investment.id}")
             
-            if result['success']:
-                print(f"Paystack init successful! Auth URL: {result['authorization_url']}")
-                # Create product transaction record
-                with transaction.atomic():
-                    product_transaction = ProductTransaction.objects.create(
-                        user=request.user,
-                        product=product,
-                        reference=reference,
-                        amount=product.price,
-                        currency='GHS',
-                        payment_method=payment_method_type,
-                        status=ProductTransaction.STATUS_IN_PROGRESS,
-                        paystack_reference=result['reference'],
-                        paystack_access_code=result['access_code'],
-                        paystack_auth_url=result['authorization_url'],
-                    )
-                    print(f"Product transaction created: {product_transaction.id}")
-                
-                # Store product info in session for callback
-                request.session['pending_product_purchase'] = {
-                    'product_id': str(product.id),
-                    'transaction_id': str(product_transaction.id),
-                    'amount': str(product.price),
-                }
-                
-                # Redirect to Paystack payment page
-                return redirect(result['authorization_url'])
-            else:
-                print(f"Paystack initialization failed: {result.get('message')}")
-                messages.error(request, f'Payment initialization failed: {result.get("message")}')
-                return redirect('product')
-                
-        except Exception as e:
-            print(f"Exception in Paystack payment: {str(e)}")
-            import traceback
-            traceback.print_exc()
-            messages.error(request, f'Payment error: {str(e)}')
-            return redirect('product')
-        
+            # Process commissions and team volumes
+            process_referral_commission.delay(investment.id)
+            update_team_volumes.delay(request.user.id)
+            
+            # Send push notification
+            send_product_purchase_notification.delay(request.user.id, product.name)
+            
+            messages.success(request, f'Successfully purchased {product.name}! Your investment is now active.')
+            return redirect('my_investments')
+    else:
+        print(f"Insufficient balance. Balance: {user_balance.balance}, Price: {product.price}")
+        messages.error(request, 'Insufficient balance. Please recharge your wallet first.')
+        return redirect('product')
+
 
 @login_required
 def product_payment_callback(request):

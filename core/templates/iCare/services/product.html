@@ -227,93 +227,34 @@
                     </div>
                 </div>
                 
-                <!-- Payment Method Selection -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-3">Select Payment Method</label>
-                    
-                    <!-- Wallet Option -->
-                    <div class="mb-3">
-                        <button type="button" onclick="selectPaymentMethod('wallet', 'wallet', '{{ user_balance.balance }}')" 
-                            class="payment-option w-full p-3 rounded-xl text-left transition-all duration-200 border-2 
-                            border-gray-200 bg-white hover:border-blue-300">
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center gap-3">
-                                    <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center flex-shrink-0">
-                                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                        </svg>
-                                    </div>
-                                    <div>
-                                        <p class="font-semibold text-gray-900 text-sm">Wallet Balance</p>
-                                        <p class="text-xs text-gray-500">Available: ₵{{ user_balance.balance|floatformat:2|intcomma }}</p>
-                                    </div>
-                                </div>
-                                <div id="wallet-radio" class="w-5 h-5 rounded-full border-2 border-gray-300 flex-shrink-0"></div>
+                <!-- Wallet Balance Display -->
+                <div class="bg-green-50 border border-green-200 rounded-xl p-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center">
+                                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
                             </div>
-                        </button>
-                    </div>
-                    
-                    <!-- Saved Payment Methods -->
-                    {% if saved_accounts %}
-                        <div class="space-y-2">
-                            <p class="text-xs text-gray-500 uppercase tracking-wide mb-2">Saved Payment Methods</p>
-                            {% for account in saved_accounts %}
-                            <button type="button" onclick="selectPaymentMethod('{{ account.id }}', '{{ account.account_type }}', '{{ account.id }}')" 
-                                class="payment-option w-full p-3 rounded-xl text-left transition-all duration-200 border-2 
-                                border-gray-200 bg-white hover:border-blue-300">
-                                <div class="flex items-center justify-between">
-                                    <div class="flex items-center gap-3">
-                                        {% if account.account_type == 'mobile_money' %}
-                                            <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center flex-shrink-0">
-                                                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
-                                                </svg>
-                                            </div>
-                                            <div>
-                                                <p class="font-semibold text-gray-900 text-sm">{{ account.get_network_display }}</p>
-                                                <p class="text-xs text-gray-500">{{ account.phone_number }}</p>
-                                            </div>
-                                        {% else %}
-                                            <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center flex-shrink-0">
-                                                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
-                                                </svg>
-                                            </div>
-                                            <div>
-                                                <p class="font-semibold text-gray-900 text-sm">{{ account.bank_name }}</p>
-                                                <p class="text-xs text-gray-500">{{ account.account_number|slice:"-4" }}</p>
-                                            </div>
-                                        {% endif %}
-                                        {% if account.is_default %}
-                                            <span class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Default</span>
-                                        {% endif %}
-                                    </div>
-                                    <div id="radio-{{ account.id }}" class="w-5 h-5 rounded-full border-2 border-gray-300 flex-shrink-0"></div>
-                                </div>
-                            </button>
-                            {% endfor %}
+                            <div>
+                                <p class="text-sm font-semibold text-gray-900">Wallet Balance</p>
+                                <p class="text-xs text-gray-500">Available: ₵{{ user_balance.balance|floatformat:2|intcomma }}</p>
+                            </div>
                         </div>
-                    {% endif %}
-                    
-                    <!-- Add New Payment Method Link -->
-                    <div class="mt-3 text-center">
-                        <a href="{% url 'saved_payment_methods' %}" class="text-xs text-blue-600 font-medium hover:text-blue-700 inline-flex items-center gap-1">
-                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                            </svg>
-                            Add New Payment Method
-                        </a>
+                        <span class="text-base font-bold text-green-700">₵{{ user_balance.balance|floatformat:2|intcomma }}</span>
                     </div>
                 </div>
-                
-                <!-- Wallet Warning -->
-                <div id="wallet-warning" class="hidden bg-yellow-50 border-l-4 border-yellow-500 rounded-lg p-2 text-xs text-yellow-800">
-                    <div class="flex items-center gap-2">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+
+                <!-- Insufficient Balance Warning -->
+                <div id="wallet-warning" class="hidden bg-red-50 border-l-4 border-red-500 rounded-lg p-4">
+                    <p class="text-sm font-semibold text-red-800 mb-1">Insufficient Balance</p>
+                    <p class="text-xs text-red-700 mb-3">Your wallet balance is too low for this purchase. Please top up your wallet first.</p>
+                    <a href="{% url 'recharge' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white text-xs font-semibold rounded-xl hover:bg-red-700 transition">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                         </svg>
-                        <span>Insufficient balance. Please recharge your wallet or select another payment method.</span>
-                    </div>
+                        Top Up Wallet
+                    </a>
                 </div>
             </div>
             
@@ -324,7 +265,7 @@
                         <button type="button" onclick="closePurchaseModal()" class="flex-1 py-2.5 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition text-sm">
                             Cancel
                         </button>
-                        <button type="submit" class="flex-1 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-medium hover:from-blue-700 hover:to-blue-800 transition shadow-md text-sm">
+                        <button type="submit" id="confirm-purchase-btn" class="flex-1 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-medium hover:from-blue-700 hover:to-blue-800 transition shadow-md text-sm">
                             Confirm Purchase
                         </button>
                     </div>
@@ -535,29 +476,33 @@
     // Show purchase modal with product details
     function showPurchaseModal(productId, productName, productPrice) {
         const modal = document.getElementById('purchase-modal');
+        const balance = {{ user_balance.balance|default:0 }};
         
         document.getElementById('purchase-product-id').value = productId;
         document.getElementById('purchase-product-name').innerText = productName;
         document.getElementById('purchase-product-price').innerHTML = `₵ ${parseFloat(productPrice).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
         
-        // Reset selected payment method
-        selectedPaymentMethodId = null;
-        selectedPaymentMethodType = null;
-        
-        // Reset hidden inputs
-        const paymentMethodIdInput = document.getElementById('payment-method-id');
-        const paymentMethodTypeInput = document.getElementById('payment-method-type');
-        if (paymentMethodIdInput) paymentMethodIdInput.value = '';
-        if (paymentMethodTypeInput) paymentMethodTypeInput.value = '';
-        
-        // Remove selected class from all payment options
-        document.querySelectorAll('.payment-option').forEach(option => {
-            option.classList.remove('selected');
-        });
-        
-        // Hide wallet warning
+        // Always use wallet payment — only payment method allowed
+        document.getElementById('payment-method-id').value = 'wallet';
+        document.getElementById('payment-method-type').value = 'wallet';
+        selectedPaymentMethodId = 'wallet';
+        selectedPaymentMethodType = 'wallet';
+
+        // Check if wallet has enough balance
+        const confirmBtn = document.getElementById('confirm-purchase-btn');
         const walletWarning = document.getElementById('wallet-warning');
-        if (walletWarning) walletWarning.classList.add('hidden');
+        if (parseFloat(productPrice) > balance) {
+            // Insufficient balance: show warning, disable confirm button
+            walletWarning.classList.remove('hidden');
+            confirmBtn.disabled = true;
+            confirmBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            confirmBtn.classList.remove('hover:from-blue-700', 'hover:to-blue-800');
+        } else {
+            walletWarning.classList.add('hidden');
+            confirmBtn.disabled = false;
+            confirmBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            confirmBtn.classList.add('hover:from-blue-700', 'hover:to-blue-800');
+        }
         
         modal.classList.remove('hidden');
         modal.classList.add('flex');
