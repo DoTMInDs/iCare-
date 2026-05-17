@@ -48,7 +48,7 @@ class UserBalanceAdmin(admin.ModelAdmin):
     @admin.display(description='Balance')
     def balance_display(self, obj):
         color = 'green' if obj.balance > 0 else 'gray'
-        return format_html('<b style="color:{}">₵ {:,.2f}</b>', color, obj.balance)
+        return format_html('<b style="color:{}">₵ {}</b>', color, f'{obj.balance:,.2f}')
 
 
 # ─────────────────────────────────────────────
@@ -91,7 +91,7 @@ class RechargeTransactionAdmin(admin.ModelAdmin):
 
     @admin.display(description='Amount')
     def amount_display(self, obj):
-        return format_html('<b>₵ {:,.2f}</b>', obj.amount)
+        return format_html('<b>₵ {}</b>', f'{obj.amount:,.2f}')
 
     @admin.display(description='Status')
     def status_badge_display(self, obj):
@@ -135,7 +135,7 @@ class WithdrawalTransactionAdmin(admin.ModelAdmin):
 
     @admin.display(description='Amount')
     def amount_display(self, obj):
-        return format_html('<b style="color:red">-₵ {:,.2f}</b>', obj.amount)
+        return format_html('<b style="color:red">-₵ {}</b>', f'{obj.amount:,.2f}')
 
     @admin.display(description='Status')
     def status_badge_display(self, obj):
@@ -194,7 +194,7 @@ class UserInvestmentAdmin(admin.ModelAdmin):
 
     @admin.display(description='Amount')
     def amount_display(self, obj):
-        return format_html('<b>₵ {:,.2f}</b>', obj.amount)
+        return format_html('<b>₵ {}</b>', f'{obj.amount:,.2f}')
 
     @admin.display(description='Status')
     def status_badge_display(self, obj):
@@ -216,7 +216,7 @@ class UserInvestmentAdmin(admin.ModelAdmin):
             earned = obj.calculate_earned_so_far()
         except Exception:
             earned = 0
-        return format_html('<span style="color:green">₵ {:,.2f}</span>', earned)
+        return format_html('<span style="color:green">₵ {}</span>', f'{earned:,.2f}')
 
 
 # ─────────────────────────────────────────────
@@ -242,7 +242,7 @@ class ProductTransactionAdmin(admin.ModelAdmin):
 
     @admin.display(description='Amount')
     def amount_display(self, obj):
-        return format_html('<b>₵ {:,.2f}</b>', obj.amount)
+        return format_html('<b>₵ {}</b>', f'{obj.amount:,.2f}')
 
     @admin.display(description='Status')
     def status_badge_display(self, obj):
@@ -405,7 +405,7 @@ class ReferralCommissionAdmin(admin.ModelAdmin):
 
     @admin.display(description='Amount')
     def amount_display(self, obj):
-        return format_html('<b style="color:green">₵ {:,.2f}</b>', obj.amount)
+        return format_html('<b style="color:green">₵ {}</b>', f'{obj.amount:,.2f}')
 
     @admin.display(description='Paid')
     def is_paid_badge(self, obj):

@@ -468,24 +468,22 @@ def account_balance(request):
         user=request.user
     )[:5]
     
-    # Get active investments
+    # Get active investments for display
     active_investments = UserInvestment.objects.filter(
         user=request.user,
         status='active'
     ).select_related('product')[:3]
     
-    # Calculate stats
-    total_invested = UserInvestment.objects.filter(
+    # Calculate stats across ALL active investments
+    all_active_investments = UserInvestment.objects.filter(
         user=request.user,
         status='active'
-    ).aggregate(Sum('amount'))['amount__sum'] or 0
+    )
+    total_invested = all_active_investments.aggregate(Sum('amount'))['amount__sum'] or 0
     
-    investments = UserInvestment.objects.filter(user=request.user, status='active')
-    total_earnings = 0
-    for investment in investments:
-        total_earnings += investment.calculate_earned_so_far()
-    
-    net_balance = user_balance.balance + total_earnings - total_invested
+    total_earnings = sum(investment.calculate_earned_so_far() for investment in all_active_investments)
+    net_balance = user_balance.balance + Decimal(str(total_earnings))
+    total_account_value = user_balance.balance + Decimal(str(total_earnings)) + total_invested
     
     context = {
         'user_balance': user_balance,
@@ -497,6 +495,7 @@ def account_balance(request):
         'total_invested': total_invested,
         'total_earnings': total_earnings,
         'net_balance': net_balance,
+        'total_account_value': total_account_value,
     }
     return render(request, 'iCare/services/pages/account_balance.html', context)
 

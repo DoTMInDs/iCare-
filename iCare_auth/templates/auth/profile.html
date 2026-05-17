@@ -68,7 +68,7 @@
             <div class="flex justify-between items-center flex-wrap gap-[1rem]">
                 <div>
                     <p class="text-sm text-gray-500 font-medium">Available Balance</p>
-                    <p class="text-2xl font-bold text-gray-900 mt-1">₵{{ user_balance.balance|floatformat:2|intcomma }}</p>
+                    <p class="text-2xl font-bold text-gray-900 mt-1">GHS {{ user_balance.balance|floatformat:2|intcomma }}</p>
                 </div>
                 <div class="flex gap-2">
                     <a href="{% url 'recharge' %}" class="px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition shadow-sm">
@@ -77,6 +77,21 @@
                     <a href="{% url 'withdraw' %}" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-200 transition">
                         Withdraw
                     </a>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-3 gap-2 pt-4 mt-4 border-t border-gray-100 text-center">
+                <div>
+                    <p class="text-xs text-gray-500">Wallet Cash</p>
+                    <p class="text-sm font-bold text-gray-800 mt-0.5">GHS {{ user_balance.balance|floatformat:2|intcomma }}</p>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-500">Active Invested</p>
+                    <p class="text-sm font-bold text-gray-800 mt-0.5">GHS {{ total_invested|floatformat:2|intcomma }}</p>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-500">Accum. Profits</p>
+                    <p class="text-sm font-bold text-green-600 mt-0.5">GHS {{ total_earnings|floatformat:2|intcomma }}</p>
                 </div>
             </div>
         </div>

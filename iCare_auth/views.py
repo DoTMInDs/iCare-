@@ -21,6 +21,7 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from webpush import send_user_notification
 import json
+from decimal import Decimal
 
 # Create your views here.
 def process_referral_on_signup(new_user, referral_code):
@@ -225,15 +226,15 @@ def profile(request):
         status='active'
     ).select_related('product')[:3]
 
-     # Calculate stats
-    total_invested = UserInvestment.objects.filter(
+    all_active_investments = UserInvestment.objects.filter(
         user=request.user,
         status='active'
-    ).aggregate(Sum('amount'))['amount__sum'] or 0
+    )
+    total_invested = all_active_investments.aggregate(Sum('amount'))['amount__sum'] or 0
     
-    total_earnings = 0
-    for investment in active_investments:
-        total_earnings += investment.calculate_earned_so_far()
+    total_earnings = sum(investment.calculate_earned_so_far() for investment in all_active_investments)
+    net_balance = user_balance.balance + Decimal(str(total_earnings))
+    total_account_value = user_balance.balance + Decimal(str(total_earnings)) + total_invested
 
     # Initialize forms
     profile_form = UserProfileForm(instance=profile, user=request.user)
@@ -250,6 +251,8 @@ def profile(request):
         'active_investments': active_investments,
         'total_invested': total_invested,
         'total_earnings': total_earnings,
+        'net_balance': net_balance,
+        'total_account_value': total_account_value,
         'profile_form': profile_form,
         'password_form': password_form,
     }
