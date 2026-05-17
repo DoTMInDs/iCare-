@@ -30,6 +30,12 @@ from core.tasks import (
     process_referral_commission,
     update_team_volumes
 )
+from .tasks import (
+    process_daily_earnings, process_referral_commissions, 
+    update_binary_tree_volumes, send_commission_notification,
+    send_withdrawal_notification, send_recharge_notification,
+    send_product_purchase_notification
+)
 
 
 def generate_referral_code():
@@ -203,18 +209,22 @@ def payment_callback(request):
         if result['success'] and result['status'] == 'success':
             print("Payment verification successful!")
             
-            # Payment successful - mark transaction and update balance
-            charge_transaction.mark_success()
-            
-            # Get or create user balance
-            user_balance, created = UserBalance.objects.get_or_create(
-                user=request.user,
-                defaults={'balance': 0, 'currency': 'GHS'}
-            )
-            
-            # Add the charged amount to user balance
-            user_balance.add_balance(charge_transaction.amount)
-            print(f"Balance updated. New balance: {user_balance.balance}")
+            if charge_transaction.status != RechargeTransaction.STATUS_SUCCESS:
+                # Payment successful - mark transaction and update balance
+                charge_transaction.mark_success()
+                
+                # Get or create user balance
+                user_balance, created = UserBalance.objects.get_or_create(
+                    user=request.user,
+                    defaults={'balance': 0, 'currency': 'GHS'}
+                )
+                
+                # Add the charged amount to user balance
+                user_balance.add_balance(charge_transaction.amount)
+                print(f"Balance updated. New balance: {user_balance.balance}")
+                
+                # Send push notification
+                send_recharge_notification.delay(request.user.id, float(charge_transaction.amount))
             
             # Add success message
             messages.success(request, f'Payment of GHS {charge_transaction.amount} successful! Your wallet has been credited.')
@@ -272,7 +282,19 @@ def payment_webhook(request):
         result = paystack_service.verify_payment(reference)
         
         if result['success'] and result['status'] == 'success':
-            transaction.mark_success()
+            if transaction.status != RechargeTransaction.STATUS_SUCCESS:
+                transaction.mark_success()
+                
+                # Update user balance
+                user_balance, created = UserBalance.objects.get_or_create(
+                    user=transaction.user,
+                    defaults={'balance': 0, 'currency': 'GHS'}
+                )
+                user_balance.add_balance(transaction.amount)
+                
+                # Send push notification
+                send_recharge_notification.delay(transaction.user.id, float(transaction.amount))
+                
             return JsonResponse({'status': 'success', 'message': 'Payment verified'})
         else:
             transaction.mark_failed()
@@ -739,6 +761,10 @@ def product_payment_callback(request):
                         transaction_reference=product_transaction.reference  # This now exists
                     )
                     print(f"Investment created: {investment.id}")
+                    
+                    # Send push notification
+                    send_product_purchase_notification.delay(request.user.id, product_transaction.product.name)
+                    
                     messages.success(request, f'Successfully purchased {product_transaction.product.name}! Your investment is now active.')
             else:
                 print("Investment already exists")
@@ -821,6 +847,9 @@ def product_payment_webhook(request):
                             status='active',
                             transaction_reference=product_transaction.reference
                         )
+                        
+                        # Send push notification
+                        send_product_purchase_notification.delay(product_transaction.user.id, product_transaction.product.name)
                 
                 return JsonResponse({'status': 'success', 'message': 'Product purchase verified'})
             else:

@@ -6,6 +6,7 @@ from core.models import (
     UserBalance, ReferralCommission, TeamMember, 
     UserReferral, UserInvestment
 )
+from webpush import send_user_notification
 from django.db import transaction
 from django.db import models
 import logging
@@ -109,8 +110,14 @@ def send_commission_notification(user_id, amount, investment_amount, level):
         # Send push notification or SMS about commission earned
         print(f"🔔 {user.phone_number} earned ₵{amount} commission from level {level} investment of ₵{investment_amount}")
         
-        # You can integrate with Firebase Cloud Messaging or OneSignal here
-        # or send an SMS using Africa's Talking
+        # Send push notification
+        payload = {
+            'head': 'Commission Earned! 💰',
+            'body': f'You earned ₵{amount} commission from a level {level} investment of ₵{investment_amount}!',
+            'icon': '/static/imgs/icons/icon-192x192.png',
+            'url': '/core/account/balance/'
+        }
+        send_user_notification(user=user, payload=payload, ttl=86400)
         
         return f"Notification sent to {user.phone_number}"
     except Exception as e:
@@ -124,7 +131,57 @@ def send_withdrawal_notification(user_id, amount):
     try:
         user = User.objects.get(id=user_id)
         print(f"✅ {user.phone_number} - Your withdrawal of ₵{amount} has been processed!")
+        
+        # Send push notification
+        payload = {
+            'head': 'Withdrawal Successful! ✅',
+            'body': f'Your withdrawal of ₵{amount} has been processed.',
+            'icon': '/static/imgs/icons/icon-192x192.png',
+            'url': '/core/withdrawal-records/'
+        }
+        send_user_notification(user=user, payload=payload, ttl=86400)
+        
         return f"Withdrawal notification sent to {user.phone_number}"
+    except Exception as e:
+        return str(e)
+
+
+@shared_task
+def send_recharge_notification(user_id, amount):
+    """Send recharge success notification"""
+    try:
+        user = User.objects.get(id=user_id)
+        
+        # Send push notification
+        payload = {
+            'head': 'Recharge Successful! 💳',
+            'body': f'Your wallet has been credited with ₵{amount}.',
+            'icon': '/static/imgs/icons/icon-192x192.png',
+            'url': '/core/account/balance/'
+        }
+        send_user_notification(user=user, payload=payload, ttl=86400)
+        
+        return f"Recharge notification sent to {user.phone_number}"
+    except Exception as e:
+        return str(e)
+
+
+@shared_task
+def send_product_purchase_notification(user_id, product_name):
+    """Send product purchase success notification"""
+    try:
+        user = User.objects.get(id=user_id)
+        
+        # Send push notification
+        payload = {
+            'head': 'Purchase Successful! 🛍️',
+            'body': f'You successfully purchased the {product_name} package. It is now active!',
+            'icon': '/static/imgs/icons/icon-192x192.png',
+            'url': '/core/my-investments/'
+        }
+        send_user_notification(user=user, payload=payload, ttl=86400)
+        
+        return f"Product purchase notification sent to {user.phone_number}"
     except Exception as e:
         return str(e)
     
