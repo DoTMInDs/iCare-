@@ -45,11 +45,12 @@ SECRET_KEY = get_env_var("SECRET_KEY", required=True)
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 
-ALLOWED_HOSTS = [host.strip() for host in os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1,[::1],robororxs.onrender.com,.vercel.app').split(',')]
+ALLOWED_HOSTS = [host.strip() for host in os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1,[::1],robororxs.onrender.com,roboforxs.vercel.app').split(',')]
 # ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "").split(",")
 CSRF_TRUSTED_ORIGINS = [
     "https://b2a9-154-161-153-208.ngrok-free.app",
     'https://robororxs.onrender.com',
+    'https://roboforxs.vercel.app'
 ]
 CSRF_TRUSTED_ORIGINS = os.environ.get('CSRF_TRUSTED_ORIGINS', 'http://localhost').split(' ')
 
