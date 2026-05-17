@@ -174,7 +174,7 @@ else:
     DATABASES = {
         'default': dj_database_url.config(
             default=os.getenv("DATABASE_URL"),
-            conn_max_age=600,
+            conn_max_age=0 if os.getenv("VERCEL") else 600,
             ssl_require=True,
         )
     }
@@ -216,7 +216,7 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 if not DEBUG:
-    STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+    STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles_build')
     STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'static'),
