@@ -350,10 +350,18 @@ def withdrawal(request):
             with transaction.atomic():
                 # Deduct balance
                 if user_balance.deduct_balance(amount):
+                    # Calculate 30% withdrawal fee
+                    fee = amount * Decimal('0.30')
+                    net_amount = amount - fee
+                    
                     # Create withdrawal transaction record with saved account details
                     withdrawal_details = {
                         'method': saved_account.account_type,
                         'saved_account_id': str(saved_account.id),
+                        'gross_amount': str(amount),
+                        'fee_percentage': '30%',
+                        'fee_amount': str(fee.quantize(Decimal('0.01'))),
+                        'net_payable': str(net_amount.quantize(Decimal('0.01'))),
                     }
                     
                     if saved_account.account_type == 'mobile_money':

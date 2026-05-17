@@ -85,8 +85,7 @@
                         value="{{ request.POST.amount|default:'' }}"
                         class="w-full bg-transparent outline-none text-lg font-medium text-gray-900 placeholder-gray-400"
                     >
-                </div>
-                <div class="flex justify-between mt-3">
+                             <div class="flex justify-between mt-3">
                     <div class="flex gap-2">
                         <button type="button" data-amount="100" class="quick-amount px-3 py-1.5 text-xs bg-gray-100 rounded-lg text-gray-700 hover:bg-gray-200 transition">₵100</button>
                         <button type="button" data-amount="250" class="quick-amount px-3 py-1.5 text-xs bg-gray-100 rounded-lg text-gray-700 hover:bg-gray-200 transition">₵250</button>
@@ -99,6 +98,24 @@
                 <p class="text-xs text-gray-400 mt-3">
                     <span id="amount-error" class="text-red-500 hidden">Amount must be between ₵100 and your available balance</span>
                 </p>
+                
+                <!-- Real-time Fee Calculator -->
+                <div id="fee-calculator" class="mt-4 p-4 bg-blue-50/50 rounded-2xl border border-blue-100 hidden animate-fade-in">
+                    <div class="space-y-1.5">
+                        <div class="flex justify-between text-xs text-gray-600">
+                            <span>Requested Amount:</span>
+                            <span id="calc-gross" class="font-semibold text-gray-800">₵0.00</span>
+                        </div>
+                        <div class="flex justify-between text-xs text-gray-600">
+                            <span>Withdrawal Fee (30%):</span>
+                            <span id="calc-fee" class="font-semibold text-red-600">-₵0.00</span>
+                        </div>
+                        <div class="flex justify-between text-xs font-bold text-gray-900 border-t border-blue-200/60 pt-2 mt-2">
+                            <span>Estimated Net Payout:</span>
+                            <span id="calc-net" class="text-green-600 text-sm">₵0.00</span>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Saved Payment Methods Section -->
@@ -184,6 +201,7 @@
                     </svg>
                     <div class="text-xs text-gray-600 space-y-2">
                         <p class="font-semibold text-gray-800 text-sm">📋 Withdrawal Guidelines</p>
+                        <p>• A standard withdrawal fee of <strong>30%</strong> applies to all requests</p>
                         <p>• Minimum withdrawal amount is <strong>₵100</strong></p>
                         <p>• Processing takes 5-30 minutes for mobile money</p>
                         <p>• Bank transfers may take 1-2 business hours</p>
@@ -191,6 +209,7 @@
                         <p>• Ensure all details are correct before submitting</p>
                     </div>
                 </div>
+            </div>            </div>
             </div>
         </form>
     </div>
@@ -249,6 +268,22 @@
 
         // Amount validation
         function validateAmount(amount) {
+            const feeCalc = document.getElementById('fee-calculator');
+            const calcGross = document.getElementById('calc-gross');
+            const calcFee = document.getElementById('calc-fee');
+            const calcNet = document.getElementById('calc-net');
+
+            if (amount > 0) {
+                feeCalc.classList.remove('hidden');
+                const fee = amount * 0.30;
+                const net = amount - fee;
+                calcGross.textContent = `₵${amount.toFixed(2)}`;
+                calcFee.textContent = `-₵${fee.toFixed(2)}`;
+                calcNet.textContent = `₵${net.toFixed(2)}`;
+            } else {
+                feeCalc.classList.add('hidden');
+            }
+
             if (amount < 100) {
                 amountError.classList.remove('hidden');
                 amountError.textContent = 'Minimum withdrawal amount is ₵100';

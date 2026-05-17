@@ -211,6 +211,21 @@
                         <span class="font-mono text-gray-700">{{ transaction.reference }}</span>
                     </div>
                     
+                    {% if transaction.withdrawal_details.fee_amount %}
+                    <div class="flex justify-between">
+                        <span class="text-gray-500">Gross Amount:</span>
+                        <span class="text-gray-700">₵{{ transaction.withdrawal_details.gross_amount|default:transaction.amount }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-500">Withdrawal Fee (30%):</span>
+                        <span class="text-red-600 font-medium">-₵{{ transaction.withdrawal_details.fee_amount }}</span>
+                    </div>
+                    <div class="flex justify-between border-t border-gray-100 pt-1.5 mt-1.5">
+                        <span class="text-gray-700 font-semibold">Net Payout:</span>
+                        <span class="text-green-600 font-bold">₵{{ transaction.withdrawal_details.net_payable }}</span>
+                    </div>
+                    {% endif %}
+                    
                     {% if transaction.withdrawal_method == 'mobile_money' %}
                         <div class="flex justify-between">
                             <span class="text-gray-500">Network:</span>
