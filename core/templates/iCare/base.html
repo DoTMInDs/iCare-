@@ -4,9 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>RoBosForx - {% block title %}{% endblock %}</title>
+    <title>RoBoForxs - {% block title %}{% endblock %}</title>
 
-    <!-- Favicon - Your RoboForex Logo from correct path -->
+    <!-- Favicon - Your RoboForxs Logo from correct path -->
     <link rel="icon" type="image/png" sizes="72x72" href="{% static 'imgs/icons/icon-72x72.png' %}">
     <link rel="icon" type="image/png" sizes="96x96" href="{% static 'imgs/icons/icon-96x96.png' %}">
     <link rel="icon" type="image/png" sizes="192x192" href="{% static 'imgs/icons/icon-192x192.png' %}">
@@ -94,9 +94,9 @@
             installButton.innerHTML = `
                 <div style="padding: 16px;">
                     <div style="display: flex; align-items: start; gap: 12px; margin-bottom: 12px;">
-                        <img src="/static/imgs/icons/icon-72x72.png" alt="RoBosForx" style="width: 48px; height: 48px; border-radius: 12px; object-fit: contain;">
+                        <img src="/static/imgs/icons/icon-72x72.png" alt="RoBoForxs" style="width: 48px; height: 48px; border-radius: 12px; object-fit: contain;">
                         <div style="flex: 1;">
-                            <div style="font-weight: 700; font-size: 16px; color: white; margin-bottom: 4px;">Install RoBosForx App</div>
+                            <div style="font-weight: 700; font-size: 16px; color: white; margin-bottom: 4px;">Install RoBoForxs App</div>
                             <div style="font-size: 13px; color: #94a3b8;">Get faster access, offline support, and a better trading experience</div>
                         </div>
                         <button onclick="dismissInstallPrompt()" style="background: none; border: none; color: #94a3b8; cursor: pointer; padding: 4px; font-size: 20px; line-height: 1;">×</button>
@@ -156,7 +156,7 @@
 
         // Handle app installed event
         window.addEventListener('appinstalled', (evt) => {
-            console.log('RoBosForx PWA was installed');
+            console.log('RoBoForxs PWA was installed');
             dismissInstallPrompt();
         });
 

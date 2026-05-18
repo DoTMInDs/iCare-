@@ -265,7 +265,7 @@ CELERY_BROKER_TRANSPORT_OPTIONS = {
 CELERY_REDIS_RETRY_ON_TIMEOUT = True
 
 # PWA Configuration
-PWA_APP_NAME = 'RoBosForx'
+PWA_APP_NAME = 'RoBoForxs'
 PWA_APP_DESCRIPTION = "Professional Trading Platform - Fast, Secure, Reliable"
 PWA_APP_THEME_COLOR = '#2563eb'
 PWA_APP_BACKGROUND_COLOR = '#f8fafc'
@@ -275,7 +275,7 @@ PWA_APP_START_URL = '/'
 PWA_APP_ORIENTATION = 'portrait-primary'
 PWA_APP_STATUS_BAR_COLOR = '#2563eb'
 
-# PWA Icons using your RoboForex Logo
+# PWA Icons using your RoboForxs Logo
 PWA_APP_ICONS = [
     {
         'src': '/static/imgs/icons/icon-72x72.png',

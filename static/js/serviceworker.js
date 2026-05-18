@@ -1,5 +1,5 @@
 // static/js/serviceworker.js
-var staticCacheName = "RoBosForx-pwa-v" + new Date().getTime() + "-v5";
+var staticCacheName = "RoBoForxs-pwa-v" + new Date().getTime() + "-v5";
 
 // Files to cache - Only cache public, unauthenticated routes!
 // Caching protected routes causes redirects, which Chrome rejects in cache.addAll()
@@ -94,7 +94,7 @@ self.addEventListener("fetch", event => {
 self.addEventListener('push', function(event) {
     console.log('[ServiceWorker] Push Received');
     let data = { 
-        head: 'RoBosForx', 
+        head: 'RoBoForxs', 
         body: 'New notification',
         url: '/'  // Changed to root
     };
@@ -106,7 +106,7 @@ self.addEventListener('push', function(event) {
         }
     }
     
-    const title = data.head || data.title || 'RoBosForx';
+    const title = data.head || data.title || 'RoBoForxs';
     
     event.waitUntil(
         self.registration.showNotification(title, {
