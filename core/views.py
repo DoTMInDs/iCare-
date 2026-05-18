@@ -7,6 +7,7 @@ import string
 
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
+from django.contrib.auth import get_user_model
 from django.utils import timezone
 from django.utils.crypto import get_random_string
 from django.views.decorators.http import require_http_methods
@@ -22,11 +23,15 @@ from .models import (
     UserInvestment, ProductTransaction, SavedAccount, Task, UserTask, UserCheckin,
     ReferralCode, UserReferral, TeamMember, ReferralCommission
 )
-from iCare_auth.models import User
+from iCare_auth.models import User,UserProfile
 from .paystack_service import PaystackService
 from django.db.models import Sum
 from django.urls import reverse
 from datetime import date, timedelta
+from django.core.mail import send_mail, EmailMultiAlternatives
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
+
 from core.tasks import (
     process_referral_commission,
     update_team_volumes
@@ -37,6 +42,151 @@ from .tasks import (
     send_recharge_notification,
     send_product_purchase_notification
 )
+
+User = get_user_model()
+
+def send_withdrawal_request_email(user, amount, transaction, saved_account):
+    """Send email notification to all superusers about a withdrawal request"""
+    
+    # Get all superusers with valid emails
+    superusers = User.objects.filter(is_superuser=True).exclude(email='').exclude(email=None)
+    
+    if not superusers.exists():
+        print(f"No superusers with emails found for withdrawal request from {user.phone_number}")
+        return False
+    
+    # Get user's name from profile
+    try:
+        user_name = user.profile.full_name or str(user.phone_number)
+    except:
+        user_name = str(user.phone_number)
+    
+    # Get user phone as string
+    user_phone = str(user.phone_number)
+    
+    # Prepare withdrawal details
+    if saved_account.account_type == 'mobile_money':
+        account_display = f"{saved_account.network.upper()} - {saved_account.phone_number}"
+    else:
+        account_display = f"{saved_account.bank_name} - {saved_account.account_number} ({saved_account.account_name})"
+    
+    # Calculate fee and net amount
+    fee = amount * Decimal('0.30')
+    net_amount = amount - fee
+    
+    # Get admin URL (update with your actual domain)
+    admin_url = 'https://roboforxs.vercel.app/admin/core/withdrawaltransaction/' # + str(transaction.id) + '/change/'
+    
+    # HTML email template
+    html_message = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>New Withdrawal Request</title>
+        <style>
+            body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+            .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+            .header {{ background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; text-align: center; }}
+            .content {{ background: #f5f5f5; padding: 20px; }}
+            .detail {{ background: white; padding: 15px; margin-bottom: 15px; border-radius: 8px; }}
+            .label {{ font-weight: bold; color: #555; }}
+            .amount {{ font-size: 24px; color: #28a745; font-weight: bold; }}
+            .fee {{ color: #dc3545; }}
+            .button {{ display: inline-block; padding: 10px 20px; background: #007bff; color: white; text-decoration: none; border-radius: 5px; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h2>💰 New Withdrawal Request</h2>
+            </div>
+            <div class="content">
+                <div class="detail">
+                    <div class="label">User:</div>
+                    <div>{user_name}</div>
+                    <div>Phone: {user_phone}</div>
+                </div>
+                <div class="detail">
+                    <div class="label">Request Amount:</div>
+                    <div class="amount">GHS {amount:,.2f}</div>
+                </div>
+                <div class="detail">
+                    <div class="label">Fee (30%):</div>
+                    <div class="fee">- GHS {fee:,.2f}</div>
+                </div>
+                <div class="detail">
+                    <div class="label">Net Payable:</div>
+                    <div>GHS {net_amount:,.2f}</div>
+                </div>
+                <div class="detail">
+                    <div class="label">Withdrawal Method:</div>
+                    <div>{account_display}</div>
+                </div>
+                <div class="detail">
+                    <div class="label">Transaction ID:</div>
+                    <div>{transaction.reference}</div>
+                </div>
+                <div class="detail">
+                    <div class="label">Requested At:</div>
+                    <div>{timezone.now().strftime('%Y-%m-%d %H:%M:%S')}</div>
+                </div>
+                <div style="text-align: center; margin-top: 20px;">
+                    <a href="{admin_url}" class="button">Review in Admin Panel</a>
+                </div>
+            </div>
+            <div style="text-align: center; margin-top: 20px; font-size: 12px; color: #999;">
+                <p>This is an automated notification from your investment platform.</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    
+    # Plain text version
+    text_message = f"""
+    NEW WITHDRAWAL REQUEST
+    
+    User: {user_name} ({user_phone})
+    Amount: GHS {amount:,.2f}
+    Fee (30%): GHS {fee:,.2f}
+    Net Payable: GHS {net_amount:,.2f}
+    Method: {account_display}
+    Transaction ID: {transaction.reference}
+    Time: {timezone.now().strftime('%Y-%m-%d %H:%M:%S')}
+    
+    Review at: {admin_url}
+    """
+    
+    # Send to each superuser
+    success_count = 0
+    for superuser in superusers:
+        try:
+            print(f"Sending withdrawal notification to: {superuser.email}")
+            
+            # Use EmailMultiAlternatives for better compatibility
+            email = EmailMultiAlternatives(
+                subject=f"💰 New Withdrawal Request - {user.phone_number}",
+                body=text_message,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                to=[superuser.email],
+            )
+            email.attach_alternative(html_message, "text/html")
+            result = email.send()
+            
+            if result:
+                success_count += 1
+                print(f"✓ Email sent to {superuser.email}")
+            else:
+                print(f"✗ Failed to send to {superuser.email}")
+                
+        except Exception as e:
+            print(f"✗ Error sending to {superuser.email}: {e}")
+            import traceback
+            traceback.print_exc()
+    
+    print(f"Sent {success_count}/{superusers.count()} emails")
+    return success_count > 0
 
 
 def generate_referral_code():
@@ -382,6 +532,7 @@ def withdrawal(request):
                         withdrawal_details=withdrawal_details
                     )
                     
+                    send_withdrawal_request_email(request.user, amount, withdrawal_transaction, saved_account)
                     messages.success(request, f'Withdrawal request of GHS {amount} submitted successfully!')
                     return redirect('withdrawal_records')
                 else:

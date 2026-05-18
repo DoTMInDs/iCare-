@@ -42,7 +42,15 @@ class User(AbstractBaseUser, PermissionsMixin):
     def __str__(self):
         return self.phone_number.as_international
     
+    def get_full_name(self):
+        """Return the full name from profile if available"""
+        try:
+            return self.profile.full_name or str(self.phone_number)
+        except UserProfile.DoesNotExist:
+            return str(self.phone_number)
+    
     def get_short_name(self):
+        """Return the short name"""
         return str(self.phone_number)
     
 # profile model to store additional user information
