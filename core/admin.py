@@ -207,7 +207,14 @@ class UserInvestmentAdmin(admin.ModelAdmin):
         except Exception:
             remaining = 0
         if remaining <= 0:
-            return format_html('<span style="color:gray">Expired</span>')
+            from django.utils.safestring import mark_safe
+            return mark_safe('<span style="color:#6b7280; font-weight:500;">Expired</span>')
+        elif remaining <= 3:
+            from django.utils.safestring import mark_safe
+            return mark_safe(f'<span style="color:#dc2626; font-weight:bold;">{remaining} days left ⚠️</span>')
+        elif remaining <= 7:
+            from django.utils.safestring import mark_safe
+            return mark_safe(f'<span style="color:#d97706; font-weight:500;">{remaining} days left</span>')
         return f'{remaining} days'
 
     @admin.display(description='Earned So Far')
