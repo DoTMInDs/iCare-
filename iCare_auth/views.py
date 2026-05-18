@@ -1,3 +1,4 @@
+import os
 from django.shortcuts import render,redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
@@ -136,7 +137,18 @@ def signup(request):
             new_user = form.save()  # Signal automatically creates TeamMember and ReferralCode
             
             # Send welcome notifications asynchronously
-            send_welcome_email.delay(new_user.id)
+            ON_VERCEL = os.getenv('VERCEL', False)
+            
+            try:
+                if ON_VERCEL:
+                    # Vercel: Send email synchronously
+                    send_welcome_email(new_user.id)
+                else:
+                    # Local: Use Celery async
+                    send_welcome_email.delay(new_user.id)
+            except Exception as e:
+                # Don't let email failure break signup
+                print(f"Welcome email failed: {e}")
             messages.success(request, 'Account created successfully!')
             
             # Process referral AFTER user is saved
