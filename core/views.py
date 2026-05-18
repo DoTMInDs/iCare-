@@ -89,12 +89,13 @@ def recharge(request):
             try:
                 paystack_service = PaystackService()
                 # Generate a valid email for Paystack
-                if request.user.email:
-                    user_email = request.user.email
+                if request.user.profile.email:
+                    user_email = request.user.profile.email
                 else:
                     # Paystack requires a valid email format - use phone number digits with a real domain
                     phone_digits = ''.join(filter(str.isdigit, str(request.user.phone_number)))
-                    user_email = f"user{phone_digits[-6:]}@icare.com"  # Use .com instead of .local
+                    # use real email
+                    user_email = f"user{phone_digits[-6:]}@roboforxs.vercel.app"  # Use .com instead of .local
                 
                 # callback_url should point to a view that can handle the payment verification
                 callback_url = request.build_absolute_uri(reverse('payment_callback'))
