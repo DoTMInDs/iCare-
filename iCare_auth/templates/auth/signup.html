@@ -13,10 +13,10 @@
              class="w-full h-full object-cover">
     </div>
 
-    <!-- Mobile First Notification System -->
-    <div id="notification-container" class="fixed inset-x-0 top-0 z-50 flex flex-col items-center pointer-events-none pt-4 sm:pt-6 px-4 sm:px-6 gap-3">
+    <!-- Mobile First Notification System - Fixed at Very Top -->
+    <div id="notification-container" class="fixed top-0 left-0 right-0 z-50 flex flex-col items-center px-4 sm:px-6 gap-3 pointer-events-none" style="margin-top: env(safe-area-inset-top, 0px); display: none;">
         <!-- Success Notification -->
-        <div id="success-notification" class="w-full sm:max-w-sm transform transition-all duration-500 ease-out -translate-y-full opacity-0 pointer-events-auto">
+        <div id="success-notification" class="w-full sm:max-w-sm transform transition-all duration-500 ease-out pointer-events-auto">
             <div class="bg-green-500/95 backdrop-blur-md rounded-2xl shadow-2xl border border-green-400/30 p-4 flex items-start gap-3">
                 <div class="shrink-0 flex-none">
                     <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -36,7 +36,7 @@
         </div>
 
         <!-- Error Notification -->
-        <div id="error-notification" class="w-full sm:max-w-sm transform transition-all duration-500 ease-out -translate-y-full opacity-0 pointer-events-auto">
+        <div id="error-notification" class="w-full sm:max-w-sm transform transition-all duration-500 ease-out pointer-events-auto">
             <div class="bg-red-500/95 backdrop-blur-md rounded-2xl shadow-2xl border border-red-400/30 p-4 flex items-start gap-3">
                 <div class="shrink-0 flex-none">
                     <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -56,7 +56,7 @@
         </div>
 
         <!-- Info Notification -->
-        <div id="info-notification" class="w-full sm:max-w-sm transform transition-all duration-500 ease-out -translate-y-full opacity-0 pointer-events-auto">
+        <div id="info-notification" class="w-full sm:max-w-sm transform transition-all duration-500 ease-out pointer-events-auto">
             <div class="bg-blue-500/95 backdrop-blur-md rounded-2xl shadow-2xl border border-blue-400/30 p-4 flex items-start gap-3">
                 <div class="shrink-0 flex-none">
                     <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -76,7 +76,7 @@
         </div>
 
         <!-- Warning Notification -->
-        <div id="warning-notification" class="w-full sm:max-w-sm transform transition-all duration-500 ease-out -translate-y-full opacity-0 pointer-events-auto">
+        <div id="warning-notification" class="w-full sm:max-w-sm transform transition-all duration-500 ease-out pointer-events-auto">
             <div class="bg-yellow-500/95 backdrop-blur-md rounded-2xl shadow-2xl border border-yellow-400/30 p-4 flex items-start gap-3">
                 <div class="shrink-0 flex-none">
                     <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -240,31 +240,74 @@
 </div>
 
 <script>
-// Notification System
+// Notification System - Completely hides container when not in use
+let notificationTimeout = null;
+
 function showNotification(type, title, message, duration = 5000) {
+    const container = document.getElementById('notification-container');
     const notification = document.getElementById(`${type}-notification`);
-    if (!notification) return;
+    if (!notification || !container) return;
     
+    // Update message content
     const titleElement = document.getElementById(`${type}-message`);
     const detailElement = document.getElementById(`${type}-detail`);
     
     if (titleElement) titleElement.textContent = title;
     if (detailElement && message) detailElement.textContent = message;
     
-    notification.classList.remove('-translate-y-full', 'opacity-0');
-    notification.classList.add('translate-y-0', 'opacity-100');
+    // Hide all notifications first
+    document.querySelectorAll('#notification-container > div').forEach(notif => {
+        notif.style.display = 'none';
+        notif.classList.remove('translate-y-0', 'opacity-100');
+        notif.classList.add('-translate-y-full', 'opacity-0');
+    });
     
+    // Show the container
+    container.style.display = 'flex';
+    
+    // Show the specific notification
+    notification.style.display = 'block';
+    
+    // Trigger animation after a tiny delay
     setTimeout(() => {
+        notification.classList.remove('-translate-y-full', 'opacity-0');
+        notification.classList.add('translate-y-0', 'opacity-100');
+    }, 10);
+    
+    // Clear existing timeout
+    if (notificationTimeout) {
+        clearTimeout(notificationTimeout);
+    }
+    
+    // Auto hide after duration
+    notificationTimeout = setTimeout(() => {
         closeNotification(type);
     }, duration);
 }
 
 function closeNotification(type) {
+    const container = document.getElementById('notification-container');
     const notification = document.getElementById(`${type}-notification`);
-    if (notification) {
-        notification.classList.remove('translate-y-0', 'opacity-100');
-        notification.classList.add('-translate-y-full', 'opacity-0');
-    }
+    if (!notification) return;
+    
+    // Hide this notification
+    notification.classList.remove('translate-y-0', 'opacity-100');
+    notification.classList.add('-translate-y-full', 'opacity-0');
+    
+    // After animation, hide the notification element
+    setTimeout(() => {
+        notification.style.display = 'none';
+        
+        // Check if any notifications are visible
+        const anyVisible = Array.from(document.querySelectorAll('#notification-container > div')).some(
+            notif => notif.style.display === 'block'
+        );
+        
+        // Hide container if no notifications are visible
+        if (!anyVisible && container) {
+            container.style.display = 'none';
+        }
+    }, 300);
 }
 
 // Auto-format phone number
@@ -392,17 +435,34 @@ document.querySelectorAll('#toggle-password').forEach(button => {
         transition: transform 0.3s ease-out;
     }
     
-    @keyframes fadeIn {
-        from {
-            opacity: 0;
-            transform: translateY(20px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
+    /* Notification container - hidden by default */
+    #notification-container {
+        display: none;
     }
-    
+
+    /* Individual notifications - hidden by default */
+    #success-notification,
+    #error-notification,
+    #info-notification,
+    #warning-notification {
+        display: none;
+        transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+    }
+
+    /* When visible */
+    #success-notification.translate-y-0,
+    #error-notification.translate-y-0,
+    #info-notification.translate-y-0,
+    #warning-notification.translate-y-0 {
+        transform: translateY(0);
+        opacity: 1;
+    }
+
+    /* When hidden */
+    .-translate-y-full {
+        transform: translateY(-100%);
+        opacity: 0;
+    }
     .relative.z-20 {
         animation: fadeIn 0.6s ease-out;
     }

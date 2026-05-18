@@ -13,8 +13,8 @@
              class="w-full h-full object-cover">
     </div>
 
-    <!-- Mobile First Notification System -->
-    <div id="notification-container" class="fixed inset-x-0 top-0 z-50 flex flex-col items-center pointer-events-none pt-4 sm:pt-6 px-4 sm:px-6 gap-3">
+    <!-- Mobile First Notification System - Fixed at Very Top -->
+    <div id="notification-container" class="fixed top-0 left-0 right-0 z-50 flex flex-col items-center px-4 sm:px-6 gap-3 pointer-events-none" style="margin-top: env(safe-area-inset-top, 0px);">
         <!-- Success Notification -->
         <div id="success-notification" class="w-full sm:max-w-sm transform transition-all duration-500 ease-out -translate-y-full opacity-0 pointer-events-auto">
             <div class="bg-green-500/95 backdrop-blur-md rounded-2xl shadow-2xl border border-green-400/30 p-4 flex items-start gap-3">
@@ -24,8 +24,8 @@
                     </svg>
                 </div>
                 <div class="flex-1 min-w-0">
-                    <p id="success-message" class="text-white font-medium text-sm">Successfully logged in!</p>
-                    <p class="text-green-100 text-xs mt-0.5">Redirecting to dashboard...</p>
+                    <p id="success-message" class="text-white font-medium text-sm">Account created successfully!</p>
+                    <p class="text-green-100 text-xs mt-0.5">Redirecting to login...</p>
                 </div>
                 <button onclick="closeNotification('success')" class="shrink-0 flex-none text-white/70 hover:text-white transition">
                     <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -44,8 +44,8 @@
                     </svg>
                 </div>
                 <div class="flex-1 min-w-0">
-                    <p id="error-message" class="text-white font-medium text-sm">Login failed</p>
-                    <p id="error-detail" class="text-red-100 text-xs mt-0.5">Please check your credentials</p>
+                    <p id="error-message" class="text-white font-medium text-sm">Registration failed</p>
+                    <p id="error-detail" class="text-red-100 text-xs mt-0.5">Please check your information</p>
                 </div>
                 <button onclick="closeNotification('error')" class="shrink-0 flex-none text-white/70 hover:text-white transition">
                     <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -64,8 +64,8 @@
                     </svg>
                 </div>
                 <div class="flex-1 min-w-0">
-                    <p id="info-message" class="text-white font-medium text-sm">Welcome back!</p>
-                    <p id="info-detail" class="text-blue-100 text-xs mt-0.5">Please login to continue</p>
+                    <p id="info-message" class="text-white font-medium text-sm">Welcome!</p>
+                    <p id="info-detail" class="text-blue-100 text-xs mt-0.5">Create your account to get started</p>
                 </div>
                 <button onclick="closeNotification('info')" class="shrink-0 flex-none text-white/70 hover:text-white transition">
                     <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -84,8 +84,8 @@
                     </svg>
                 </div>
                 <div class="flex-1 min-w-0">
-                    <p id="warning-message" class="text-white font-medium text-sm">Session Expiring</p>
-                    <p id="warning-detail" class="text-yellow-100 text-xs mt-0.5">You'll be logged out in 5 minutes</p>
+                    <p id="warning-message" class="text-white font-medium text-sm">Validation Warning</p>
+                    <p id="warning-detail" class="text-yellow-100 text-xs mt-0.5">Please review your input</p>
                 </div>
                 <button onclick="closeNotification('warning')" class="shrink-0 flex-none text-white/70 hover:text-white transition">
                     <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -210,10 +210,13 @@
 </div>
 
 <script>
-// Notification System
+// Notification System - Completely hides container when not in use
+let notificationTimeout = null;
+
 function showNotification(type, title, message, duration = 5000) {
+    const container = document.getElementById('notification-container');
     const notification = document.getElementById(`${type}-notification`);
-    if (!notification) return;
+    if (!notification || !container) return;
     
     // Update message content
     const titleElement = document.getElementById(`${type}-message`);
@@ -222,22 +225,59 @@ function showNotification(type, title, message, duration = 5000) {
     if (titleElement) titleElement.textContent = title;
     if (detailElement && message) detailElement.textContent = message;
     
-    // Show notification
-    notification.classList.remove('-translate-y-full', 'opacity-0');
-    notification.classList.add('translate-y-0', 'opacity-100');
+    // Hide all notifications first
+    document.querySelectorAll('#notification-container > div').forEach(notif => {
+        notif.style.display = 'none';
+        notif.classList.remove('translate-y-0', 'opacity-100');
+        notif.classList.add('-translate-y-full', 'opacity-0');
+    });
+    
+    // Show the container
+    container.style.display = 'flex';
+    
+    // Show the specific notification
+    notification.style.display = 'block';
+    
+    // Trigger animation after a tiny delay
+    setTimeout(() => {
+        notification.classList.remove('-translate-y-full', 'opacity-0');
+        notification.classList.add('translate-y-0', 'opacity-100');
+    }, 10);
+    
+    // Clear existing timeout
+    if (notificationTimeout) {
+        clearTimeout(notificationTimeout);
+    }
     
     // Auto hide after duration
-    setTimeout(() => {
+    notificationTimeout = setTimeout(() => {
         closeNotification(type);
     }, duration);
 }
 
 function closeNotification(type) {
+    const container = document.getElementById('notification-container');
     const notification = document.getElementById(`${type}-notification`);
-    if (notification) {
-        notification.classList.remove('translate-y-0', 'opacity-100');
-        notification.classList.add('-translate-y-full', 'opacity-0');
-    }
+    if (!notification) return;
+    
+    // Hide this notification
+    notification.classList.remove('translate-y-0', 'opacity-100');
+    notification.classList.add('-translate-y-full', 'opacity-0');
+    
+    // After animation, hide the notification element
+    setTimeout(() => {
+        notification.style.display = 'none';
+        
+        // Check if any notifications are visible
+        const anyVisible = Array.from(document.querySelectorAll('#notification-container > div')).some(
+            notif => notif.style.display === 'block'
+        );
+        
+        // Hide container if no notifications are visible
+        if (!anyVisible && container) {
+            container.style.display = 'none';
+        }
+    }, 300);
 }
 
 // Toggle password visibility
@@ -391,21 +431,33 @@ document.addEventListener('mousemove', function(e) {
         animation: fadeIn 0.6s ease-out;
     }
     
-    /* Notification animations */
-    .transition-all {
-        transition-property: all;
-        transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    /* Notification container - hidden by default */
+    #notification-container {
+        display: none;
     }
-    
-    /* Loading spinner animation */
-    @keyframes spin {
-        to {
-            transform: rotate(360deg);
-        }
+
+    /* Individual notifications - hidden by default */
+    #success-notification,
+    #error-notification,
+    #info-notification,
+    #warning-notification {
+        display: none;
+        transition: transform 0.3s ease-out, opacity 0.3s ease-out;
     }
-    
-    .animate-spin {
-        animation: spin 1s linear infinite;
+
+    /* When visible */
+    #success-notification.translate-y-0,
+    #error-notification.translate-y-0,
+    #info-notification.translate-y-0,
+    #warning-notification.translate-y-0 {
+        transform: translateY(0);
+        opacity: 1;
+    }
+
+    /* When hidden */
+    .-translate-y-full {
+        transform: translateY(-100%);
+        opacity: 0;
     }
 </style>
 
