@@ -189,6 +189,266 @@ def send_withdrawal_request_email(user, amount, transaction, saved_account):
     return success_count > 0
 
 
+def send_recharge_request_email(user, amount, transaction):
+    """Send email notification to all superusers about a recharge request"""
+    
+    # Get all superusers with valid emails
+    superusers = User.objects.filter(is_superuser=True).exclude(email='').exclude(email=None)
+    
+    if not superusers.exists():
+        print(f"No superusers with emails found for recharge from {user.phone_number}")
+        return False
+    
+    # Get user's name from profile
+    try:
+        user_name = user.profile.full_name or str(user.phone_number)
+    except:
+        user_name = str(user.phone_number)
+    
+    # Get user phone as string
+    user_phone = str(user.phone_number)
+    
+    # Get admin URL
+    admin_url = 'https://roboforxs.vercel.app/admin/core/rechargetransaction/'
+    
+    # HTML email template
+    html_message = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>New Recharge Transaction</title>
+        <style>
+            body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+            .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+            .header {{ background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; padding: 20px; text-align: center; }}
+            .content {{ background: #f5f5f5; padding: 20px; }}
+            .detail {{ background: white; padding: 15px; margin-bottom: 15px; border-radius: 8px; }}
+            .label {{ font-weight: bold; color: #555; }}
+            .amount {{ font-size: 24px; color: #28a745; font-weight: bold; }}
+            .button {{ display: inline-block; padding: 10px 20px; background: #007bff; color: white; text-decoration: none; border-radius: 5px; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h2>💵 New Recharge Transaction</h2>
+            </div>
+            <div class="content">
+                <div class="detail">
+                    <div class="label">User:</div>
+                    <div>{user_name}</div>
+                    <div>Phone: {user_phone}</div>
+                </div>
+                <div class="detail">
+                    <div class="label">Recharge Amount:</div>
+                    <div class="amount">GHS {amount:,.2f}</div>
+                </div>
+                <div class="detail">
+                    <div class="label">Transaction ID:</div>
+                    <div>{transaction.reference}</div>
+                </div>
+                <div class="detail">
+                    <div class="label">Payment Method:</div>
+                    <div>{transaction.payment_method}</div>
+                </div>
+                <div class="detail">
+                    <div class="label">Payment Reference:</div>
+                    <div>{transaction.paystack_reference}</div>
+                </div>
+                <div class="detail">
+                    <div class="label">Transaction Time:</div>
+                    <div>{timezone.now().strftime('%Y-%m-%d %H:%M:%S')}</div>
+                </div>
+                <div style="text-align: center; margin-top: 20px;">
+                    <a href="{admin_url}" class="button">View in Admin Panel</a>
+                </div>
+            </div>
+            <div style="text-align: center; margin-top: 20px; font-size: 12px; color: #999;">
+                <p>This is an automated notification from your investment platform.</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    
+    # Plain text version
+    text_message = f"""
+    NEW RECHARGE TRANSACTION
+    
+    User: {user_name} ({user_phone})
+    Amount: GHS {amount:,.2f}
+    Transaction ID: {transaction.reference}
+    Payment Method: {transaction.payment_method}
+    Payment Reference: {transaction.paystack_reference}
+    Time: {timezone.now().strftime('%Y-%m-%d %H:%M:%S')}
+    
+    View at: {admin_url}
+    """
+    
+    # Send to each superuser
+    success_count = 0
+    for superuser in superusers:
+        try:
+            print(f"Sending recharge notification to: {superuser.email}")
+            
+            email = EmailMultiAlternatives(
+                subject=f"💵 New Recharge - {user.phone_number} added GHS {amount:,.2f}",
+                body=text_message,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                to=[superuser.email],
+            )
+            email.attach_alternative(html_message, "text/html")
+            result = email.send()
+            
+            if result:
+                success_count += 1
+                print(f"✓ Recharge email sent to {superuser.email}")
+            else:
+                print(f"✗ Failed to send recharge email to {superuser.email}")
+                
+        except Exception as e:
+            print(f"✗ Error sending recharge email to {superuser.email}: {e}")
+            import traceback
+            traceback.print_exc()
+    
+    print(f"Sent {success_count}/{superusers.count()} recharge emails")
+    return success_count > 0
+
+
+def send_product_purchase_request_email(user, amount, product, transaction):
+    """Send email notification to all superusers about a product purchase"""
+    
+    # Get all superusers with valid emails
+    superusers = User.objects.filter(is_superuser=True).exclude(email='').exclude(email=None)
+    
+    if not superusers.exists():
+        print(f"No superusers with emails found for product purchase from {user.phone_number}")
+        return False
+    
+    # Get user's name from profile
+    try:
+        user_name = user.profile.full_name or str(user.phone_number)
+    except:
+        user_name = str(user.phone_number)
+    
+    # Get user phone as string
+    user_phone = str(user.phone_number)
+    
+    # Get admin URL
+    admin_url = 'https://roboforxs.vercel.app/admin/core/producttransaction/'
+    
+    # HTML email template
+    html_message = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>New Product Purchase</title>
+        <style>
+            body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+            .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+            .header {{ background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; text-align: center; }}
+            .content {{ background: #f5f5f5; padding: 20px; }}
+            .detail {{ background: white; padding: 15px; margin-bottom: 15px; border-radius: 8px; }}
+            .label {{ font-weight: bold; color: #555; }}
+            .amount {{ font-size: 24px; color: #28a745; font-weight: bold; }}
+            .product-name {{ font-size: 18px; color: #007bff; font-weight: bold; }}
+            .button {{ display: inline-block; padding: 10px 20px; background: #007bff; color: white; text-decoration: none; border-radius: 5px; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h2>📦 New Product Purchase</h2>
+            </div>
+            <div class="content">
+                <div class="detail">
+                    <div class="label">User:</div>
+                    <div>{user_name}</div>
+                    <div>Phone: {user_phone}</div>
+                </div>
+                <div class="detail">
+                    <div class="label">Product Purchased:</div>
+                    <div class="product-name">{product.name}</div>
+                </div>
+                <div class="detail">
+                    <div class="label">Purchase Amount:</div>
+                    <div class="amount">GHS {amount:,.2f}</div>
+                </div>
+                <div class="detail">
+                    <div class="label">Transaction ID:</div>
+                    <div>{transaction.reference}</div>
+                </div>
+                <div class="detail">
+                    <div class="label">Payment Method:</div>
+                    <div>{transaction.payment_method if hasattr(transaction, 'payment_method') else 'Wallet'}</div>
+                </div>
+                <div class="detail">
+                    <div class="label">Payment Reference:</div>
+                    <div>{transaction.paystack_reference if hasattr(transaction, 'paystack_reference') else 'N/A'}</div>
+                </div>
+                <div class="detail">
+                    <div class="label">Purchase Time:</div>
+                    <div>{timezone.now().strftime('%Y-%m-%d %H:%M:%S')}</div>
+                </div>
+                <div style="text-align: center; margin-top: 20px;">
+                    <a href="{admin_url}" class="button">View in Admin Panel</a>
+                </div>
+            </div>
+            <div style="text-align: center; margin-top: 20px; font-size: 12px; color: #999;">
+                <p>This is an automated notification from your investment platform.</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    
+    # Plain text version
+    text_message = f"""
+    NEW PRODUCT PURCHASE
+    
+    User: {user_name} ({user_phone})
+    Product: {product.name}
+    Amount: GHS {amount:,.2f}
+    Transaction ID: {transaction.reference}
+    Payment Method: {transaction.payment_method if hasattr(transaction, 'payment_method') else 'Wallet'}
+    Payment Reference: {transaction.paystack_reference if hasattr(transaction, 'paystack_reference') else 'N/A'}
+    Time: {timezone.now().strftime('%Y-%m-%d %H:%M:%S')}
+    
+    View at: {admin_url}
+    """
+    
+    # Send to each superuser
+    success_count = 0
+    for superuser in superusers:
+        try:
+            print(f"Sending product purchase notification to: {superuser.email}")
+            
+            email = EmailMultiAlternatives(
+                subject=f"📦 New Product Purchase - {user.phone_number} bought {product.name} for GHS {amount:,.2f}",
+                body=text_message,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                to=[superuser.email],
+            )
+            email.attach_alternative(html_message, "text/html")
+            result = email.send()
+            
+            if result:
+                success_count += 1
+                print(f"✓ Product purchase email sent to {superuser.email}")
+            else:
+                print(f"✗ Failed to send product purchase email to {superuser.email}")
+                
+        except Exception as e:
+            print(f"✗ Error sending product purchase email to {superuser.email}: {e}")
+            import traceback
+            traceback.print_exc()
+    
+    print(f"Sent {success_count}/{superusers.count()} product purchase emails")
+    return success_count > 0
+
+
 def generate_referral_code():
     """Generate unique referral code"""
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
@@ -372,6 +632,9 @@ def payment_callback(request):
                 user_balance.add_balance(charge_transaction.amount)
                 print(f"Balance updated. New balance: {user_balance.balance}")
                 
+                # Send email notification to superusers
+                send_recharge_request_email(request.user, charge_transaction.amount, charge_transaction)
+                
                 # Send push notification
                 send_recharge_notification.delay(request.user.id, float(charge_transaction.amount))
             
@@ -393,7 +656,6 @@ def payment_callback(request):
         traceback.print_exc()
         messages.error(request, f'An error occurred: {str(e)}')
         return redirect('recharge_records')
-
 
 @csrf_exempt
 @require_http_methods(['POST'])
@@ -441,6 +703,9 @@ def payment_webhook(request):
                 )
                 user_balance.add_balance(transaction.amount)
                 
+                # Send email notification to superusers
+                send_recharge_request_email(transaction.user, transaction.amount, transaction)
+                
                 # Send push notification
                 send_recharge_notification.delay(transaction.user.id, float(transaction.amount))
                 
@@ -452,7 +717,8 @@ def payment_webhook(request):
     except json.JSONDecodeError:
         return JsonResponse({'status': 'error', 'message': 'Invalid JSON'}, status=400)
     except Exception as e:
-        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)\
+        
 
 @login_required
 def withdrawal(request):
@@ -809,6 +1075,20 @@ def purchase_product(request):
             
             print(f"Wallet payment successful! Investment ID: {investment.id}")
             
+            # Create a transaction record for the purchase (for email reference)
+            # Since it's wallet payment, create a ProductTransaction record
+            product_transaction = ProductTransaction.objects.create(
+                user=request.user,
+                product=product,
+                amount=product.price,
+                reference=f"WALLET_{investment.reference}" if hasattr(investment, 'reference') else f"WALLET_{investment.id}",
+                status='success',
+                payment_method='wallet'
+            )
+            
+            # Send email notification to superusers
+            send_product_purchase_request_email(request.user, product.price, product, product_transaction)
+            
             # Process commissions and team volumes
             process_referral_commission.delay(investment.id)
             update_team_volumes.delay(request.user.id)
@@ -822,7 +1102,7 @@ def purchase_product(request):
         print(f"Insufficient balance. Balance: {user_balance.balance}, Price: {product.price}")
         messages.error(request, 'Insufficient balance. Please recharge your wallet first.')
         return redirect('product')
-
+    
 
 @login_required
 def product_payment_callback(request):
@@ -874,9 +1154,12 @@ def product_payment_callback(request):
                         product=product_transaction.product,
                         amount=product_transaction.amount,
                         status='active',
-                        transaction_reference=product_transaction.reference  # This now exists
+                        transaction_reference=product_transaction.reference
                     )
                     print(f"Investment created: {investment.id}")
+                    
+                    # Send email notification to superusers
+                    send_product_purchase_request_email(request.user, product_transaction.amount, product_transaction.product, product_transaction)
                     
                     # Process commissions and team volumes
                     process_referral_commission.delay(investment.id)
@@ -889,13 +1172,6 @@ def product_payment_callback(request):
             else:
                 print("Investment already exists")
                 messages.info(request, 'Investment already recorded.')
-            
-            # Clear session data
-            if 'pending_product_purchase' in request.session:
-                del request.session['pending_product_purchase']
-            
-            # Redirect to my investments page
-            return redirect('my_investments')
         else:
             # Payment failed
             print(f"Payment verification failed. Status: {result.get('status')}")
@@ -967,6 +1243,9 @@ def product_payment_webhook(request):
                             status='active',
                             transaction_reference=product_transaction.reference
                         )
+                        
+                        # Send email notification to superusers
+                        send_product_purchase_request_email(product_transaction.user, product_transaction.amount, product_transaction.product, product_transaction)
                         
                         # Process commissions and team volumes
                         process_referral_commission.delay(investment.id)
