@@ -7,6 +7,7 @@ from core.models import (
     UserReferral, UserInvestment
 )
 from webpush import send_user_notification
+from django.contrib.auth import get_user_model
 from django.db import transaction
 from django.db import models
 import logging
@@ -242,3 +243,44 @@ def send_bulk_notification(user_ids, subject, message):
         send_mass_mail(emails, fail_silently=False)
     
     return f"Sent {len(emails)} notifications"
+
+
+@shared_task
+def send_daily_reminder():
+    """Sends a push notification to all users or a specific group at 12 PM."""
+    logger.info("Running daily reminder task.")
+    
+    # Option A: Send to a specific group (Recommended)
+    # If you group your users, this is the cleanest method.
+    # group_name = "all_users" # Make sure you subscribe users to this group
+    # payload = {
+    #     "head": "Daily Reminder 📢",
+    #     "body": "Don't forget to check your investments and complete your daily tasks!",
+    #     "icon": "/static/imgs/icons/icon-192x192.png",
+    #     "url": "/"
+    # }
+    # send_group_notification(group_name=group_name, payload=payload, ttl=86400)
+
+    # Option B: Iterate through all users (Works well for smaller user bases)
+    User = get_user_model()
+    users = User.objects.filter(is_active=True)
+    
+    payload = {
+        "head": "Daily Reminder 📢",
+        "body": "Time to review your RoBosForx account and boost your earnings!",
+        "icon": "/static/imgs/icons/icon-192x192.png",
+        "url": "/",
+    }
+    
+    sent_count = 0
+    for user in users:
+        try:
+            # The send_user_notification function handles the logic of finding
+            # a user's active browser subscriptions.
+            send_user_notification(user=user, payload=payload, ttl=86400)
+            sent_count += 1
+        except Exception as e:
+            # It's crucial to log errors so they don't break the entire task for all users.
+            logger.error(f"Failed to send notification to user {user.id}: {e}")
+    
+    logger.info(f"Daily reminder task finished. Sent {sent_count} notifications.")

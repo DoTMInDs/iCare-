@@ -107,6 +107,7 @@ INSTALLED_APPS = [
     'webpush',
     'celery',
     'django_extensions',
+    'django_celery_beat',
 ]
 
 TAILWIND_APP_NAME = "theme"
